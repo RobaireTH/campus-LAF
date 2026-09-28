@@ -1,23 +1,28 @@
-# campus-laf-fe
+# campus-LAF
 
-Frontend for **Campus Lost & Found** (SIWES Group 1). Students and staff report lost or found items, search them, claim with proof, and get the owner's contact once the poster approves.
+**Campus Lost & Found** (SIWES Group 1). Students and staff report lost or found items, search them, claim with proof, and get the owner's contact once the poster approves.
 
-This repo is an empty scaffold. Features are tracked in Linear (project *Campus Lost & Found*).
+One full-stack Next.js app: the pages and the API live together. This repo is a scaffold. Features are tracked in Linear (project *Campus Lost & Found*).
 
 ## Stack
 
 - Next.js (App Router) + React + TypeScript
-- Tailwind CSS
-- NextAuth.js (login + sessions)
-- Talks to the Express API in [campus-laf-be](https://github.com/RobaireTH/campus-laf-be)
+- Tailwind CSS v4
+- API: Next.js route handlers in `src/app/api/`, validated with zod
+- Auth: NextAuth.js (credentials, JWT sessions)
+- Database: PostgreSQL on Neon via Prisma
+- Uploads: Cloudflare R2 (presigned URLs)
 
 ## Getting started
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 npm install
+npm run db:generate
 npm run dev
 ```
+
+Open http://localhost:3000. The API health check is at http://localhost:3000/api/health.
 
 ## Scripts
 
@@ -27,12 +32,16 @@ npm run dev
 | `npm run build` | Production build |
 | `npm run start` | Run the production build |
 | `npm run lint` | Lint |
+| `npm run db:generate` | Generate the Prisma client |
+| `npm run db:migrate` | Create/apply a migration in dev |
 
 ## Layout
 
 ```
+prisma/          schema + migrations
 src/
-  app/         routes (App Router)
-  components/  shared UI components
-  lib/         API client, helpers
+  app/           pages (App Router)
+  app/api/       route handlers
+  components/    shared UI components
+  lib/           db client, auth helpers, API client
 ```
