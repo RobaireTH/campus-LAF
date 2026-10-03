@@ -48,3 +48,38 @@ Easiest is the `<Badge>` component, which already does this.
 
 `npm run tokens:contrast` checks every text/background pair against WCAG AA (4.5:1 text,
 3:1 for field borders and focus rings). Run it after changing any colour.
+
+## Components (SOF-36)
+
+Built on shadcn/ui patterns (Radix primitives + `cva`), themed with the tokens above.
+See them all live at **`/dev/ui`** when running `npm run dev`.
+
+| Component | File | Notes |
+| --- | --- | --- |
+| Button | `ui/button.tsx` | `variant`: primary, secondary, outline, ghost, danger, link · `size`: sm, md, lg, icon · `loading` · `asChild` for links |
+| Input, Textarea | `ui/input.tsx`, `ui/textarea.tsx` | 44px tall (touch-friendly), `aria-invalid` turns the border red |
+| Field | `ui/field.tsx` | Label + control + hint/error, wires up `aria-describedby`. Wrap every form control in it |
+| Select | `ui/select.tsx` | Radix select |
+| DatePicker, DateRangePicker | `ui/date-picker.tsx` | `disabledDays={{ after: new Date() }}` for "date lost" |
+| Checkbox, Switch | `ui/checkbox.tsx`, `ui/switch.tsx` | Pair with `<Label htmlFor>` |
+| Badge | `ui/badge.tsx` | `<ItemTypeBadge type="LOST" />`, `<ItemStatusBadge status="OPEN" />`, plus `success / warning / danger` for claims, KYC, moderation |
+| UserAvatar | `ui/avatar.tsx` | Initials fallback, `verified` check |
+| Card | `ui/card.tsx` | Shell only — the item card is SOF-27 |
+| Dialog | `ui/dialog.tsx` | Bottom sheet on phones, centred from `sm` |
+| Sheet | `ui/sheet.tsx` | `side="bottom"` for mobile filters, `"right"` for drawers |
+| Tabs | `ui/tabs.tsx` | |
+| Toast | `ui/toast.tsx` | `toast.success(...)` / `toast.error(...)`; `<Toaster />` is already in the root layout |
+| PhotoPicker | `ui/photo-picker.tsx` | Previews, remove, drag & drop, size/type checks. `maxFiles={1} capture="environment"` for Verify ID. Upload happens on submit (SOF-14) |
+
+### Layout (`src/components/layout`)
+
+- `AppShell` — top nav + mobile bottom nav. Use it in a route-group layout and pass the
+  signed-in user (`null` when signed out).
+- `PageContainer` — page wrapper with gutters, max width (`width="form"` for forms) and an
+  optional title/actions row. Clears the bottom nav on phones.
+- `ProtectedPage` — server-side guard: redirects to `/login?callbackUrl=…` when signed out,
+  shows "Verify your student ID" when `requireVerified` and not verified, 404s non-admins on
+  `requireAdmin`. Real session lookup lands with SOF-40; API routes still check on their own (SOF-46).
+- `nav-config.ts` — the nav routes in one place. Change them there if your page lives elsewhere.
+
+Not in this kit (owned by Nurain): item card (SOF-27) and loading / empty / error states (SOF-32).
