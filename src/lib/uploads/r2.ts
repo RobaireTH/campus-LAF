@@ -2,7 +2,7 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { UPLOAD_TYPES, type UploadRequest, type UploadResponse } from "./schema";
@@ -47,4 +47,9 @@ export async function createUploadUrl(request: UploadRequest, userId: string): P
     signableHeaders: new Set(["content-type", "content-length"]),
   });
   return { uploadUrl, key, expiresIn: UPLOAD_URL_TTL_SECONDS };
+}
+
+export async function createReadUrl(key: string, expiresIn: number) {
+  const command = new GetObjectCommand({ Bucket: requireEnv("R2_BUCKET"), Key: key });
+  return getSignedUrl(r2(), command, { expiresIn });
 }
