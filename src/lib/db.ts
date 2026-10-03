@@ -12,6 +12,18 @@ function createClient() {
 
 const globalForDb = globalThis as unknown as { db?: PrismaClient };
 
-export const db = globalForDb.db ?? createClient();
+function client() {
+  const instance = globalForDb.db ?? createClient();
+  if (process.env.NODE_ENV !== "production") globalForDb.db = instance;
+  return instance;
+}
 
-if (process.env.NODE_ENV !== "production") globalForDb.db = db;
+let instance: PrismaClient | undefined;
+
+export const db = new Proxy({} as PrismaClient, {
+  get(_target, property) {
+    instance ??= client();
+    const value = Reflect.get(instance, property, instance);
+    return typeof value === "function" ? value.bind(instance) : value;
+  },
+});
