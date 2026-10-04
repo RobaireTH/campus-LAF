@@ -1,0 +1,9 @@
+/* Register + Login specific layout (shared by both screens). */
+.auth__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.auth__actions { display: flex; flex-direction: column; gap: var(--space-4); }

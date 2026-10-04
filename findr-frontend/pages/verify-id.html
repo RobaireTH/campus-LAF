@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verify your ID · Findr</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+
+  <!-- Shared styles (design system) -->
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/components-upload.css">
+  <!-- Screen styles (Mike) -->
+  <link rel="stylesheet" href="../css/pages/verify-id.css">
+</head>
+<body class="screen verify">
+  <div class="screen__frame">
+    <header class="app-bar">
+      <a class="app-bar__back" href="register.html" data-route="register" data-back aria-label="Go back"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      <h2 class="app-bar__title">Verify your ID</h2>
+    </header>
+
+    <main class="screen__content">
+      <ol class="stepper verify__steps" aria-label="Verification steps">
+        <li class="step" aria-current="step"><span class="step__dot">1</span> Student ID</li>
+        <li class="step"><span class="step__dot">2</span> Selfie</li>
+        <li class="step"><span class="step__dot">3</span> Review</li>
+      </ol>
+
+      <h1>Verify your student ID</h1>
+      <p class="screen__lead">We check this once so only real students can claim items. It takes about a minute.</p>
+
+      <form class="form" id="verify-form" novalidate>
+        <!-- Front of ID -->
+        <div class="upload" data-upload="id-front">
+          <span class="upload__title" id="id-front-title">Front of your student ID</span>
+          <div class="upload__box">
+            <label class="upload__zone">
+              <input class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" aria-labelledby="id-front-title" aria-describedby="id-front-error">
+              <span class="upload__empty">
+                <span class="upload__plus" aria-hidden="true">+</span>
+                <span>Upload your ID</span>
+              </span>
+              <img class="upload__preview" alt="Preview of the front of your student ID" hidden>
+              <span class="upload__change" aria-hidden="true" hidden>Change</span>
+            </label>
+            <button class="upload__remove" type="button" aria-label="Remove ID photo" hidden>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <p class="upload__error" id="id-front-error" role="alert" hidden></p>
+        </div>
+
+        <!-- Selfie -->
+        <div class="upload" data-upload="selfie">
+          <span class="upload__title" id="selfie-title">Selfie holding your ID</span>
+          <div class="upload__box">
+            <label class="upload__zone">
+              <!-- capture="user" opens the front camera on phones; desktops show a file picker -->
+              <input class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" capture="user" aria-labelledby="selfie-title" aria-describedby="selfie-error">
+              <span class="upload__empty">
+                <span class="upload__plus" aria-hidden="true">+</span>
+                <span>Take a selfie</span>
+              </span>
+              <img class="upload__preview" alt="Preview of your selfie holding your ID" hidden>
+              <span class="upload__change" aria-hidden="true" hidden>Retake</span>
+            </label>
+            <button class="upload__remove" type="button" aria-label="Remove selfie" hidden>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <p class="upload__error" id="selfie-error" role="alert" hidden></p>
+        </div>
+
+        <div class="notice">
+          <span class="notice__icon" aria-hidden="true">i</span>
+          <p>An admin reviews it within 24 hours. Only admins ever see these photos.</p>
+        </div>
+
+        <p class="verify__status">Status: <span class="chip" id="verify-status" aria-live="polite">Not submitted</span></p>
+
+        <div class="form-alert" role="alert" data-form-alert hidden></div>
+
+        <button class="btn btn--primary btn--block" type="submit"><span class="btn__label">Submit for review</span></button>
+      </form>
+    </main>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/core/ui.js"></script>
+  <script src="../js/core/mock-api.js"></script>
+  <script src="../js/components/image-upload.js"></script>
+  <script src="../js/pages/verify-id.js"></script>
+</body>
+</html>

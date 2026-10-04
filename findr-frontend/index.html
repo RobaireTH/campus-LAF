@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Findr · Screens</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <style>
+    .dev-list { display: flex; flex-direction: column; gap: var(--space-3); margin: var(--space-6) 0 0; padding: 0; list-style: none; }
+    .dev-list a { display: block; padding: var(--space-3) var(--space-4); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text); font-weight: 600; transition: border-color var(--duration-fast) var(--ease); }
+    .dev-list a:hover { border-color: var(--color-primary); text-decoration: none; }
+    .dev-list small { display: block; color: var(--color-text-muted); font-weight: 400; }
+  </style>
+</head>
+<body class="screen">
+  <div class="screen__frame">
+    <main class="screen__content">
+      <h1>Findr screens</h1>
+      <p class="screen__lead">Temporary index for development. Replace or delete it when the real home page exists.</p>
+      <ul class="dev-list">
+        <li><a href="pages/register.html">Register <small>Mike</small></a></li>
+        <li><a href="pages/login.html">Log in <small>Mike</small></a></li>
+        <li><a href="pages/verify-id.html">Verify ID <small>Mike</small></a></li>
+      </ul>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create account · Findr</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+
+  <!-- Shared styles (design system) -->
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <!-- Screen styles (Mike) -->
+  <link rel="stylesheet" href="../css/pages/auth.css">
+</head>
+<body class="screen">
+  <div class="screen__frame">
+    <header class="app-bar">
+      <a class="app-bar__back" href="login.html" data-route="login" data-back aria-label="Go back"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+    </header>
+
+    <main class="screen__content">
+      <h1>Create your account</h1>
+      <p class="screen__lead">Use your school email so everyone here is a real student.</p>
+
+      <form class="form" id="register-form" novalidate>
+        <div class="field">
+          <label class="field__label" for="fullName">Full name <span class="field__required" aria-hidden="true">*</span></label>
+          <input class="input" id="fullName" name="fullName" type="text" placeholder="e.g. Ada Obi" autocomplete="name" required aria-describedby="fullName-error">
+          <p class="field__error" id="fullName-error" data-error-for="fullName" hidden></p>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="email">School email <span class="field__required" aria-hidden="true">*</span></label>
+          <input class="input" id="email" name="email" type="email" placeholder="you@student.oauife.edu.ng" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" required aria-describedby="email-hint email-error">
+          <p class="field__hint" id="email-hint" data-hint-for="email">Only campus emails are accepted</p>
+          <p class="field__error" id="email-error" data-error-for="email" hidden></p>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="matric">Matric number <span class="field__required" aria-hidden="true">*</span></label>
+          <input class="input" id="matric" name="matric" type="text" placeholder="e.g. CSC/2021/045" autocomplete="off" autocapitalize="characters" spellcheck="false" required aria-describedby="matric-error">
+          <p class="field__error" id="matric-error" data-error-for="matric" hidden></p>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="faculty">Faculty</label>
+          <select class="select" id="faculty" name="faculty">
+            <option value="" selected>Pick your faculty</option>
+            <option value="Administration">Administration</option>
+            <option value="Agriculture">Agriculture</option>
+            <option value="Arts">Arts</option>
+            <option value="Basic Medical Sciences">Basic Medical Sciences</option>
+            <option value="Clinical Sciences">Clinical Sciences</option>
+            <option value="Dentistry">Dentistry</option>
+            <option value="Education">Education</option>
+            <option value="Environmental Design and Management">Environmental Design and Management</option>
+            <option value="Law">Law</option>
+            <option value="Pharmacy">Pharmacy</option>
+            <option value="Science">Science</option>
+            <option value="Social Sciences">Social Sciences</option>
+            <option value="Technology">Technology</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="password">Password <span class="field__required" aria-hidden="true">*</span></label>
+          <input class="input" id="password" name="password" type="password" autocomplete="new-password" required aria-describedby="password-hint password-error">
+          <p class="field__hint" id="password-hint" data-hint-for="password">At least 8 characters</p>
+          <p class="field__error" id="password-error" data-error-for="password" hidden></p>
+        </div>
+
+        <div class="field">
+          <label class="checkbox">
+            <input class="checkbox__input" type="checkbox" name="terms" aria-describedby="terms-error">
+            <span>I agree to the Terms and community rules</span>
+          </label>
+          <p class="field__error" id="terms-error" data-error-for="terms" hidden></p>
+        </div>
+
+        <div class="form-alert" role="alert" data-form-alert hidden></div>
+
+        <div class="auth__actions">
+          <button class="btn btn--primary btn--block" type="submit"><span class="btn__label">Create account</span></button>
+          <p class="link-row"><a class="link" href="login.html" data-route="login">Already have an account? Log in</a></p>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/core/validators.js"></script>
+  <script src="../js/core/ui.js"></script>
+  <script src="../js/core/mock-api.js"></script>
+  <script src="../js/pages/register.js"></script>
+</body>
+</html>
