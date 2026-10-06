@@ -5,6 +5,7 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { BadgeCheck, CircleUserRound, LogOut, Mail, Phone, ShieldAlert } from "lucide-react";
 
+import { SignInDialog } from "@/components/auth/sign-in-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,19 +16,22 @@ export function AccountView() {
   const [account, setAccount] = useState<Account>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
+  const [authRequired, setAuthRequired] = useState(false);
 
   useEffect(() => {
     let active = true;
     fetch("/api/me").then(async (response) => ({ response, result: await response.json().catch(() => null) })).then(({ response, result }) => {
       if (!active) return;
-      if (!response.ok) setError(response.status === 401 ? "Log in to view your account." : result?.error ?? "Account details are unavailable.");
+      if (response.status === 401) { setAuthRequired(true); setError("Sign in to view your account."); }
+      else if (!response.ok) setError(result?.error ?? "Account details are unavailable.");
       else setAccount(result.user ?? result);
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
 
-  if (loading) return <div className="h-72 animate-pulse rounded-xl bg-muted" />;
-  if (error || !account) return <div className="rounded-xl border bg-card p-8 text-center"><ShieldAlert className="mx-auto size-9 text-muted-foreground" aria-hidden /><h2 className="mt-3 text-h3">{error ?? "Account unavailable"}</h2><Button asChild className="mt-5"><Link href="/login">Log in</Link></Button></div>;
+  const dialog = <SignInDialog open={authRequired} onOpenChange={setAuthRequired} callbackUrl="/account" title="Sign in to view your account" description="Your contact details and campus verification are private." />;
+  if (loading) return <><div className="h-72 animate-pulse rounded-xl bg-muted" />{dialog}</>;
+  if (error || !account) return <><div className="rounded-xl border bg-card p-8 text-center"><ShieldAlert className="mx-auto size-9 text-muted-foreground" aria-hidden /><h2 className="mt-3 text-h3">{error ?? "Account unavailable"}</h2><Button asChild className="mt-5"><Link href="/login?callbackUrl=%2Faccount">Log in</Link></Button></div>{dialog}</>;
 
   const verification = {
     NOT_SUBMITTED: { label: "Not verified", variant: "neutral" as const, copy: "Verify your school ID to strengthen claims and protected actions." },

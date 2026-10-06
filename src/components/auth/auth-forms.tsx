@@ -6,10 +6,11 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SignInDialog } from "@/components/auth/sign-in-dialog";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PhotoPicker } from "@/components/ui/photo-picker";
-import { uploadFile } from "@/lib/uploads/client";
+import { AuthRequiredError, uploadFile } from "@/lib/uploads/client";
 
 function PasswordInput({ id, name, autoComplete }: { id: string; name: string; autoComplete: string }) {
   const [visible, setVisible] = useState(false);
@@ -23,7 +24,7 @@ function PasswordInput({ id, name, autoComplete }: { id: string; name: string; a
   );
 }
 
-export function LoginForm() {
+export function LoginForm({ callbackUrl = "/" }: { callbackUrl?: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
@@ -36,7 +37,7 @@ export function LoginForm() {
     const result = await signIn("credentials", { email: data.get("email"), password: data.get("password"), redirect: false });
     setLoading(false);
     if (result?.error) return setError("Email or password is incorrect.");
-    router.push("/");
+    router.push(callbackUrl);
     router.refresh();
   }
 
@@ -50,7 +51,7 @@ export function LoginForm() {
   );
 }
 
-export function RegisterForm() {
+export function RegisterForm({ callbackUrl = "/" }: { callbackUrl?: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
@@ -59,10 +60,12 @@ export function RegisterForm() {
     event.preventDefault();
     setLoading(true);
     setError(undefined);
-    const response = await fetch("/api/auth/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.fromEntries(new FormData(event.currentTarget))) });
+    const data = new FormData(event.currentTarget);
+    const response = await fetch("/api/auth/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.fromEntries(data)) });
     setLoading(false);
     if (!response.ok) return setError((await response.json().catch(() => null))?.error ?? "Could not create your account.");
-    router.push("/verify-id");
+    await signIn("credentials", { email: data.get("email"), password: data.get("password"), redirect: false });
+    router.push(`/verify-id?callbackUrl=${encodeURIComponent(callbackUrl)}`);
   }
 
   return (
@@ -79,11 +82,12 @@ export function RegisterForm() {
   );
 }
 
-export function VerifyIdForm() {
+export function VerifyIdForm({ callbackUrl = "/" }: { callbackUrl?: string }) {
   const router = useRouter();
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
+  const [authRequired, setAuthRequired] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -95,22 +99,24 @@ export function VerifyIdForm() {
       key = await uploadFile(files[0], "kyc");
     } catch (cause) {
       setLoading(false);
+      if (cause instanceof AuthRequiredError) return setAuthRequired(true);
       return setError(cause instanceof Error ? cause.message : "Could not upload your ID.");
     }
     const response = await fetch("/api/me/verification", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key }) });
     setLoading(false);
+    if (response.status === 401) return setAuthRequired(true);
     if (!response.ok) return setError((await response.json().catch(() => null))?.error ?? "Could not submit your ID.");
-    router.push("/");
+    router.push(callbackUrl);
     router.refresh();
   }
 
   return (
-    <form onSubmit={submit} className="space-y-5">
+    <><form onSubmit={submit} className="space-y-5">
       <div className="flex gap-3 rounded-md bg-success-soft p-4 text-small text-success-soft-foreground"><ShieldCheck className="mt-0.5 size-5 shrink-0" aria-hidden /><p>Your ID is used only to verify campus membership and is never shown publicly.</p></div>
       <Field id="school-id" label="School ID" hint="Make sure your name, photo, and school are readable." required><PhotoPicker id="school-id" value={files} onChange={setFiles} maxFiles={1} maxSizeMB={5} capture="environment" /></Field>
       {error && <p role="alert" className="rounded-md bg-danger-soft p-3 text-small text-danger-soft-foreground">{error}</p>}
       <Button type="submit" size="lg" fullWidth loading={loading}>Submit for verification</Button>
-      <Button type="button" variant="ghost" fullWidth onClick={() => router.push("/")}>Do this later</Button>
-    </form>
+      <Button type="button" variant="ghost" fullWidth onClick={() => router.push(callbackUrl)}>Do this later</Button>
+    </form><SignInDialog open={authRequired} onOpenChange={setAuthRequired} callbackUrl={`/verify-id?callbackUrl=${encodeURIComponent(callbackUrl)}`} title="Sign in before verification" description="Your ID submission must be attached to your campus account." /></>
   );
 }

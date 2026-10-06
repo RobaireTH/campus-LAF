@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SignInDialog } from "@/components/auth/sign-in-dialog";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PhotoPicker } from "@/components/ui/photo-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { uploadFile } from "@/lib/uploads/client";
+import { AuthRequiredError, uploadFile } from "@/lib/uploads/client";
 
 const categories = [
   ["electronics", "Electronics"],
@@ -38,6 +39,7 @@ export function ReportItemForm() {
   const [photos, setPhotos] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
+  const [authRequired, setAuthRequired] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -62,18 +64,20 @@ export function ReportItemForm() {
         }),
       });
       const result = await response.json().catch(() => null);
+      if (response.status === 401) throw new AuthRequiredError("Sign in to publish this report.");
       if (!response.ok) throw new Error(result?.error ?? "Could not publish this report.");
       router.push(`/items/${result.item.id}`);
       router.refresh();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not publish this report.");
+      if (cause instanceof AuthRequiredError) setAuthRequired(true);
+      else setError(cause instanceof Error ? cause.message : "Could not publish this report.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <form onSubmit={submit} className="space-y-7">
+    <><form onSubmit={submit} className="space-y-7">
       <fieldset className="space-y-2">
         <legend className="text-small font-semibold">What happened?</legend>
         <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted p-1">
@@ -96,6 +100,6 @@ export function ReportItemForm() {
       <div className="flex gap-3 rounded-lg bg-accent p-4 text-small text-accent-foreground"><CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden /><p>Contact details stay private until a claim is approved.</p></div>
       {error && <p role="alert" className="flex gap-2 rounded-lg bg-danger-soft p-4 text-small text-danger-soft-foreground"><AlertCircle className="mt-0.5 size-5 shrink-0" aria-hidden />{error}</p>}
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button type="button" variant="ghost" onClick={() => router.back()}>Cancel</Button><Button type="submit" size="lg" loading={loading}>{type === "LOST" ? "Publish lost item" : "Publish found item"}</Button></div>
-    </form>
+    </form><SignInDialog open={authRequired} onOpenChange={setAuthRequired} callbackUrl="/report" title="Sign in to report an item" description="We need an account before photos can be uploaded or a campus report can be published." /></>
   );
 }

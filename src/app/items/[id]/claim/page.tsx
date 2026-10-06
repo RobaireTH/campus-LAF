@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 import { AlertCircle, ArrowLeft, LockKeyhole } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SignInDialog } from "@/components/auth/sign-in-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field } from "@/components/ui/field";
 import { PhotoPicker } from "@/components/ui/photo-picker";
 import { Textarea } from "@/components/ui/textarea";
-import { uploadFile } from "@/lib/uploads/client";
+import { AuthRequiredError, uploadFile } from "@/lib/uploads/client";
 
 export default function ClaimFormPage({ params }: PageProps<"/items/[id]/claim">) {
   const { id } = use(params);
@@ -20,6 +21,7 @@ export default function ClaimFormPage({ params }: PageProps<"/items/[id]/claim">
   const [confirmed, setConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
+  const [authRequired, setAuthRequired] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -34,11 +36,13 @@ export default function ClaimFormPage({ params }: PageProps<"/items/[id]/claim">
         body: JSON.stringify({ description, mediaKeys }),
       });
       const result = await response.json().catch(() => null);
+      if (response.status === 401) throw new AuthRequiredError("Sign in to submit a claim.");
       if (!response.ok) throw new Error(result?.error ?? "Could not submit your claim.");
       router.push(`/items/${id}/claim/sent?claim=${result.id}`);
       router.refresh();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not submit your claim.");
+      if (cause instanceof AuthRequiredError) setAuthRequired(true);
+      else setError(cause instanceof Error ? cause.message : "Could not submit your claim.");
     } finally {
       setLoading(false);
     }
@@ -55,7 +59,7 @@ export default function ClaimFormPage({ params }: PageProps<"/items/[id]/claim">
         <div className="flex gap-3 rounded-lg bg-muted p-4 text-small text-muted-foreground"><LockKeyhole className="mt-0.5 size-5 shrink-0" aria-hidden /><p>Your contact details remain private until the poster approves this claim.</p></div>
         {error && <p role="alert" className="flex gap-2 rounded-lg bg-danger-soft p-4 text-small text-danger-soft-foreground"><AlertCircle className="mt-0.5 size-5 shrink-0" aria-hidden />{error}</p>}
         <Button type="submit" size="lg" fullWidth loading={loading}>Submit claim</Button>
-      </form>
+      </form><SignInDialog open={authRequired} onOpenChange={setAuthRequired} callbackUrl={`/items/${id}/claim`} title="Sign in to claim this item" description="Claims are tied to verified campus accounts so posters can review them safely." />
     </main>
   );
 }
