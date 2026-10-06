@@ -22,7 +22,7 @@ export default function ClaimSentPage() {
           Claim sent
         </h1>
         <p className="text-xs text-gray-600 max-w-xs mx-auto leading-relaxed">
-          The finder will compare your answers. We'll notify you as soon as they decide.
+          The finder will compare your answers. We&apos;ll notify you as soon as they decide.
         </p>
       </div>
 
@@ -72,7 +72,7 @@ export default function ClaimSentPage() {
             href="/items/1/claims"
             className="text-xs font-bold text-[#6344F5] hover:underline"
           >
-            Demo: switch to the finder's view →
+            Demo: switch to the finder&apos;s view →
           </Link>
         </div>
       </div>

@@ -127,7 +127,7 @@ export default function HandoverPage() {
         <div className="flex gap-1">
           <button onClick={() => setRole('POSTER')} className={`px-2 py-0.5 rounded font-bold ${role === 'POSTER' ? 'bg-white shadow' : 'text-gray-500'}`}>Poster</button>
           <button onClick={() => setRole('CLAIMANT')} className={`px-2 py-0.5 rounded font-bold ${role === 'CLAIMANT' ? 'bg-white shadow' : 'text-gray-500'}`}>Claimant</button>
-          <button onClick={() => setRole('UNAUTHORIZED')} className={`px-2 py-0.5 rounded font-bold ${role === 'UNAUTHORIZED' ? 'bg-white shadow' : 'text-gray-500'}`}>Unauthorized</button>
+          <button onClick={() => setRole('UNAUTHORIZED')} className="px-2 py-0.5 rounded font-bold text-gray-500">Unauthorized</button>
         </div>
       </div>
 
