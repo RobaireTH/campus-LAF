@@ -3,28 +3,10 @@
  * Integration (SOF-19) replaces `searchItems` / `getItem` in ./api.ts with real fetches;
  * the pages don't need to change. Categories and locations come from seed data (SOF-9).
  */
+import { categories, locations } from "./options";
 import type { ItemDetail, ItemType, ItemStatus, Option } from "./types";
 
-export const categories: Option[] = [
-  { value: "electronics", label: "Electronics" },
-  { value: "ids-cards", label: "IDs & cards" },
-  { value: "keys", label: "Keys" },
-  { value: "bags", label: "Bags & bottles" },
-  { value: "books", label: "Books & notes" },
-  { value: "clothing", label: "Clothing & accessories" },
-  { value: "other", label: "Other" },
-];
-
-export const locations: Option[] = [
-  { value: "main-library", label: "Main Library" },
-  { value: "engineering", label: "Engineering Block" },
-  { value: "student-union", label: "Student Union Building" },
-  { value: "arts", label: "Faculty of Arts" },
-  { value: "science-lt", label: "Science Lecture Theatres" },
-  { value: "sports", label: "Sports Complex" },
-  { value: "halls", label: "Halls of residence" },
-  { value: "cafeteria", label: "Cafeteria" },
-];
+export { categories, locations } from "./options";
 
 const HOUR = 3_600_000;
 const now = Date.now();

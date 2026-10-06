@@ -1,6 +1,6 @@
 import { PageContainer } from "@/components/layout/page-container";
 import { parseSearchParams, searchItems } from "@/lib/items/api";
-import { categories, locations } from "@/lib/items/mock-data";
+import { categories, locations } from "@/lib/items/options";
 import {
   ActiveFilters,
   BrowsePending,

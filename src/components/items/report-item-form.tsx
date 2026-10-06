@@ -11,25 +11,8 @@ import { Input } from "@/components/ui/input";
 import { PhotoPicker } from "@/components/ui/photo-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { categories, locations } from "@/lib/items/options";
 import { AuthRequiredError, uploadFile } from "@/lib/uploads/client";
-
-const categories = [
-  ["electronics", "Electronics"],
-  ["bags", "Bags"],
-  ["documents", "IDs & documents"],
-  ["clothing", "Clothing"],
-  ["keys", "Keys"],
-  ["other", "Other"],
-];
-
-const locations = [
-  ["library", "Library"],
-  ["engineering", "Engineering block"],
-  ["student-centre", "Student centre"],
-  ["sports-centre", "Sports centre"],
-  ["hostels", "Hostels"],
-  ["other", "Other campus location"],
-];
 
 export function ReportItemForm() {
   const router = useRouter();
@@ -91,8 +74,8 @@ export function ReportItemForm() {
       <Field id="title" label="Item name" hint="Use a short name people can scan quickly." required><Input id="title" name="title" minLength={3} maxLength={120} placeholder="Black Jansport backpack" required /></Field>
       <Field id="description" label="Description" hint="Do not reveal every identifying detail." required><Textarea id="description" name="description" minLength={10} maxLength={2000} placeholder="Colour, brand, condition, and anything visible..." required /></Field>
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field id="category" label="Category" required><Select value={categoryId} onValueChange={setCategoryId}><SelectTrigger id="category"><SelectValue placeholder="Choose category" /></SelectTrigger><SelectContent>{categories.map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select></Field>
-        <Field id="location" label="Campus location" required><Select value={locationId} onValueChange={setLocationId}><SelectTrigger id="location"><SelectValue placeholder="Choose location" /></SelectTrigger><SelectContent>{locations.map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select></Field>
+        <Field id="category" label="Category" required><Select value={categoryId} onValueChange={setCategoryId}><SelectTrigger id="category"><SelectValue placeholder="Choose category" /></SelectTrigger><SelectContent>{categories.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></Field>
+        <Field id="location" label="Campus location" required><Select value={locationId} onValueChange={setLocationId}><SelectTrigger id="location"><SelectValue placeholder="Choose location" /></SelectTrigger><SelectContent>{locations.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></Field>
       </div>
       <Field id="locationNote" label="Where exactly?" hint="A landmark or room makes matching easier."><Input id="locationNote" name="locationNote" maxLength={200} placeholder="Near the library entrance" /></Field>
       <Field id="dateLostOrFound" label={type === "LOST" ? "Date lost" : "Date found"} required><Input id="dateLostOrFound" name="dateLostOrFound" type="date" max={new Date().toISOString().slice(0, 10)} required /></Field>
