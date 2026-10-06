@@ -1,4 +1,5 @@
 @import "tailwindcss";
+<<<<<<< HEAD
 
 @layer base {
   body {
@@ -17,3 +18,205 @@
 .font-body {
   font-family: var(--font-dm-sans), system-ui, sans-serif;
 }
+=======
+@import "tw-animate-css";
+@import "@fontsource-variable/dm-sans";
+@import "@fontsource-variable/bricolage-grotesque";
+
+/*
+ * Campus Lost & Found — design tokens (SOF-35)
+ *
+ * Raw values live as CSS variables on :root (shadcn/ui naming) and are exposed
+ * to Tailwind through @theme below, so you write `bg-primary`, `text-muted-foreground`,
+ * `bg-lost text-lost-foreground`, `rounded-lg`, `shadow-card`, `text-h2`, `font-display`…
+ * Never hard-code hex values in components — add a token here instead.
+ *
+ * Every text/background pair is checked against WCAG AA (4.5:1) by
+ * `npm run tokens:contrast`. Run it after changing a colour.
+ * Light mode only for the MVP.
+ */
+
+:root {
+  /* Surfaces + text */
+  --background: #fffbf2;
+  --foreground: #14120f;
+  --card: #ffffff;
+  --card-foreground: #14120f;
+  --popover: #ffffff;
+  --popover-foreground: #14120f;
+
+  /* Brand */
+  --primary: #6246ea;
+  --primary-hover: #5134d6;
+  --primary-foreground: #ffffff;
+  --secondary: #c6f432;
+  --secondary-hover: #b5e31f;
+  --secondary-foreground: #14120f;
+  --accent: #fff0c2;
+  --accent-foreground: #14120f;
+
+  /* Neutrals */
+  --muted: #f3eee2;
+  --muted-foreground: #5e5a52;
+  --border: #e6dfcf;
+  --input: #8d8574;
+  --ring: #6246ea;
+
+  /* Feedback */
+  --success: #16794a;
+  --success-foreground: #ffffff;
+  --success-soft: #dcf5e8;
+  --success-soft-foreground: #146c43;
+  --warning: #b45309;
+  --warning-foreground: #ffffff;
+  --warning-soft: #fff0c2;
+  --warning-soft-foreground: #8a4b00;
+  --danger: #d92d20;
+  --danger-hover: #b42318;
+  --danger-foreground: #ffffff;
+  --danger-soft: #fde2e2;
+  --danger-soft-foreground: #b42318;
+
+  /* LOST vs FOUND — always paired with the label text, never colour alone */
+  --lost: #ffe1ef;
+  --lost-foreground: #a3125e;
+  --found: #e6f9b8;
+  --found-foreground: #3a5200;
+
+  /* Item status: OPEN → CLAIMED → RESOLVED */
+  --status-open: #dceeff;
+  --status-open-foreground: #1356a8;
+  --status-claimed: #fff0c2;
+  --status-claimed-foreground: #8a4b00;
+  --status-resolved: #dcf5e8;
+  --status-resolved-foreground: #146c43;
+
+  /* Decorative brand accents (illustrations, stickers, empty states — not text backgrounds) */
+  --brand-pink: #ff7ac6;
+  --brand-yellow: #ffd23f;
+  --brand-blue: #4cc9f0;
+  --brand-lime: #c6f432;
+
+  --radius: 0.625rem; /* 10px — base for rounded-md */
+}
+
+@theme inline {
+  /* Colours */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-soft: var(--success-soft);
+  --color-success-soft-foreground: var(--success-soft-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-soft-foreground: var(--warning-soft-foreground);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-soft-foreground: var(--danger-soft-foreground);
+  /* shadcn components expect "destructive" */
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--danger-foreground);
+  --color-lost: var(--lost);
+  --color-lost-foreground: var(--lost-foreground);
+  --color-found: var(--found);
+  --color-found-foreground: var(--found-foreground);
+  --color-status-open: var(--status-open);
+  --color-status-open-foreground: var(--status-open-foreground);
+  --color-status-claimed: var(--status-claimed);
+  --color-status-claimed-foreground: var(--status-claimed-foreground);
+  --color-status-resolved: var(--status-resolved);
+  --color-status-resolved-foreground: var(--status-resolved-foreground);
+  --color-brand-pink: var(--brand-pink);
+  --color-brand-yellow: var(--brand-yellow);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-lime: var(--brand-lime);
+
+  /* Typography — DM Sans for UI, Bricolage Grotesque for headings */
+  --font-sans: "DM Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "DM Sans Variable", ui-sans-serif, sans-serif;
+
+  --text-display: 3rem; /* 48 — landing hero only */
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.03em;
+  --text-display--font-weight: 800;
+  --text-h1: 2.25rem; /* 36 */
+  --text-h1--line-height: 1.15;
+  --text-h1--letter-spacing: -0.025em;
+  --text-h1--font-weight: 800;
+  --text-h2: 1.75rem; /* 28 */
+  --text-h2--line-height: 1.2;
+  --text-h2--letter-spacing: -0.02em;
+  --text-h2--font-weight: 700;
+  --text-h3: 1.25rem; /* 20 */
+  --text-h3--line-height: 1.3;
+  --text-h3--letter-spacing: -0.01em;
+  --text-h3--font-weight: 700;
+  --text-body: 1rem; /* 16 */
+  --text-body--line-height: 1.55;
+  --text-small: 0.875rem; /* 14 */
+  --text-small--line-height: 1.45;
+  --text-caption: 0.75rem; /* 12 */
+  --text-caption--line-height: 1.4;
+
+  /* Spacing: Tailwind's 4px scale (p-1 = 4px, p-4 = 16px …). Page gutters: */
+  --spacing-gutter: 1rem; /* mobile side padding */
+  --spacing-gutter-lg: 2rem; /* ≥ lg */
+  --container-page: 72rem; /* 1152px max content width */
+  --container-form: 32rem; /* 512px auth + single-column forms */
+
+  /* Radius */
+  --radius-sm: calc(var(--radius) - 4px); /* 6 */
+  --radius-md: var(--radius); /* 10 */
+  --radius-lg: calc(var(--radius) + 4px); /* 14 */
+  --radius-xl: calc(var(--radius) + 10px); /* 20 */
+
+  /* Shadows */
+  --shadow-card: 0 1px 2px rgb(20 18 15 / 0.06), 0 4px 12px rgb(20 18 15 / 0.05);
+  --shadow-pop: 0 8px 24px rgb(20 18 15 / 0.12), 0 2px 6px rgb(20 18 15 / 0.08);
+  --shadow-sticker: 4px 4px 0 0 var(--foreground); /* playful accent — use sparingly */
+
+  /* Mobile bottom nav height, so pages can pad above it */
+  --spacing-bottom-nav: 4rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background font-sans text-body text-foreground;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+}
+>>>>>>> origin/main

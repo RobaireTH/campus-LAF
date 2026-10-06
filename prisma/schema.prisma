@@ -1,8 +1,156 @@
-generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+generator client{
+    provider = "prisma-client"
+    output = "../src/generated/prisma"
+}
+datasource db {
+    provider = "postgresql"
 }
 
-datasource db {
-  provider = "postgresql"
+enum Role{
+    STUDENT
+    STAFF
+    LECTURER
+    ADMIN
+}
+
+enum ItemType{
+    LOST
+    FOUND
+}
+
+enum ItemStatus{
+    OPEN
+    CLAIMED
+    RESOLVED
+    REMOVED
+}
+enum ClaimStatus{
+    PENDING
+    APPROVED
+    REJECTED
+}
+enum KycStatus {
+    NOT_SUBMITTED
+    PENDING
+    VERIFIED 
+    REJECTED
+}
+enum MediaType {
+    IMAGE 
+    VIDEO 
+}
+model VerificationToken{
+    identifier String
+    token      String   @unique
+    expires    DateTime
+
+    @@unique([identifier, token])
+}
+
+model User {
+    id            String     @id @default(cuid())
+    name          String?
+    email         String     @unique
+    emailVerified DateTime?
+    password      String
+    image         String?
+    phone         String?    @unique
+    role          Role       @default(STUDENT)
+    kycStatus     KycStatus  @default(NOT_SUBMITTED)
+    kycIdImageKey String?
+
+    items Item[]
+    claims Claim[]
+
+    createdAt DateTime @default(now())
+
+    @@index([kycStatus])
+}
+
+model Category {
+    id String @id @default(cuid())
+    name String @unique
+
+    items Item[]
+}
+
+model Location{
+    id String @id @default(cuid())
+    name String @unique
+
+    items Item[]
+}
+
+model Item {
+    id          String  @id @default(cuid())
+    type        ItemType
+    title       String
+    description String
+    status      ItemStatus @default(OPEN)
+    eventDate   DateTime
+
+    categoryId  String
+    category    Category @relation(fields: [categoryId], references: [id])
+
+    locationId   String
+    location     Location @relation(fields: [locationId], references: [id])
+
+    posterId     String
+    poster       User  @relation(fields: [posterId], references: [id])
+
+    media ItemMedia[]
+    claims Claim[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([status])
+    @@index([type])
+    @@index([categoryId])
+    @@index([locationId])
+    @@index([createdAt])
+}
+
+model ItemMedia {
+    id        String    @id @default(cuid())
+    key       String    @unique
+    type      MediaType
+    position  Int       @default(0)
+    createdAt DateTime  @default(now())
+
+    itemId String
+    item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+    @@index([itemId])
+}
+model Claim{
+    id          String  @id @default(cuid())
+    status      ClaimStatus @default(PENDING)
+    proofText   String
+    decidedAt   DateTime?
+    itemId      String
+    item        Item @relation(fields: [itemId], references:[id])
+
+    media       ClaimMedia[]
+
+    claimantId  String
+    claimant    User @relation(fields: [claimantId], references: [id])
+
+    createdAt   DateTime @default(now())
+
+    @@index([itemId])
+    @@index([claimantId])
+}
+
+model ClaimMedia {
+    id        String    @id @default(cuid())
+    key       String    @unique
+    type      MediaType
+    position  Int       @default(0)
+    createdAt DateTime  @default(now())
+
+    claimId String
+    claim   Claim  @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+    @@index([claimId])
 }
