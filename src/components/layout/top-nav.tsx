@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Plus, ShieldCheck } from "lucide-react";
 
@@ -12,10 +13,8 @@ import { isActive, mainNav, routes, type ShellUser } from "@/components/layout/n
 export function Logo({ className }: { className?: string }) {
   return (
     <Link href="/" className={cn("flex items-center gap-2 rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40", className)}>
-      <span className="flex size-8 items-center justify-center rounded-full bg-primary font-display text-h3 leading-none text-primary-foreground">
-        f
-      </span>
-      <span className="font-display text-h3 tracking-tight">findr</span>
+      <Image src="/brand/findr-mark.png" alt="" width={36} height={36} className="size-9 object-contain" priority />
+      <span className="font-display text-h3 tracking-tight">Findr</span>
     </Link>
   );
 }

@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toast";
 export const metadata: Metadata = {
   title: "Campus Lost & Found",
   description: "Find and return lost items across campus.",
+  icons: { icon: "/brand/findr-mark.png" },
 };
 
 export const viewport: Viewport = {
