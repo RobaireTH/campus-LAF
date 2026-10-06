@@ -1,83 +1,76 @@
 import "server-only";
 
-import { categoryLabel, locationLabel, mockItems } from "./mock-data";
+import { headers } from "next/headers";
 import type { ItemCardData, ItemDetail, ItemSearchParams, ItemSearchResponse, ItemType } from "./types";
 
-/*
- * Data access for Browse + Item details.
- * Right now this reads mock data (./mock-data). Integration (SOF-19) swaps the bodies of
- * `searchItems` and `getItem` for calls to GET /api/items (SOF-11) and GET /api/items/:id
- * (SOF-12). Keep the signatures and the pages won't need to change.
- */
+async function apiUrl(path: string) {
+  const incoming = await headers();
+  const host = incoming.get("x-forwarded-host") ?? incoming.get("host");
+  const protocol = incoming.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
+  if (!host) throw new Error("Request host is unavailable");
+  return new URL(path, `${protocol}://${host}`);
+}
 
-const PAGE_SIZE = 12;
-const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-function toCard(i: ItemDetail): ItemCardData {
-  return {
-    id: i.id,
-    title: i.title,
-    type: i.type,
-    category: i.category,
-    location: i.location,
-    date: i.date,
-    status: i.status,
-    thumbnailUrl: i.media.find((m) => m.kind === "IMAGE")?.url ?? null,
-  };
+async function request(path: string) {
+  const incoming = await headers();
+  const response = await fetch(await apiUrl(path), {
+    cache: "no-store",
+    headers: { cookie: incoming.get("cookie") ?? "", authorization: incoming.get("authorization") ?? "" },
+  });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`Item service returned ${response.status}`);
+  return response.json();
 }
 
 export async function searchItems(params: ItemSearchParams): Promise<ItemSearchResponse> {
-  await wait(250); // feel the loading states while mocking
-  const q = params.q?.trim().toLowerCase();
-  const from = params.from ? new Date(`${params.from}T00:00:00`).getTime() : null;
-  const to = params.to ? new Date(`${params.to}T23:59:59`).getTime() : null;
-
-  let list = mockItems.filter((i) => {
-    if (i.status !== "OPEN") return false; // SOF-11: status defaults to OPEN
-    if (params.type && i.type !== params.type) return false;
-    if (params.category && i.category !== categoryLabel(params.category)) return false;
-    if (params.location && i.location !== locationLabel(params.location)) return false;
-    const t = new Date(i.date).getTime();
-    if (from && t < from) return false;
-    if (to && t > to) return false;
-    if (q && !`${i.title} ${i.description}`.toLowerCase().includes(q)) return false;
-    return true;
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined) query.set(key, String(value));
   });
-
-  list = list.sort((a, b) => {
-    const d = new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime();
-    return params.sort === "oldest" ? -d : d;
-  });
-
-  const start = params.cursor ? Number(params.cursor) || 0 : 0;
-  const limit = params.limit ?? PAGE_SIZE;
-  const page = list.slice(start, start + limit);
-  const next = start + limit < list.length ? String(start + limit) : null;
-  return { items: page.map(toCard), nextCursor: next, total: list.length };
+  const data = await request(`/api/items?${query}`);
+  const items: ItemCardData[] = (data?.items ?? []).map((item: Record<string, unknown>) => ({
+    id: String(item.id),
+    title: String(item.title),
+    type: item.type as ItemCardData["type"],
+    category: String(item.category),
+    location: String(item.location),
+    date: String(item.date),
+    status: item.status as ItemCardData["status"],
+    thumbnailUrl: typeof item.thumbnailUrl === "string" ? item.thumbnailUrl : typeof item.thumbnail === "string" && item.thumbnail.startsWith("http") ? item.thumbnail : null,
+  }));
+  return { items, nextCursor: data?.nextCursor ?? null, total: data?.total ?? items.length };
 }
 
-/** Dev-only viewer override for the mock: ?as=owner | claimant */
-export type MockViewer = "owner" | "claimant";
-
-export async function getItem(id: string, mockAs?: MockViewer): Promise<ItemDetail | null> {
-  await wait(200);
-  const item = mockItems.find((i) => i.id === id);
-  if (!item) return null;
+export async function getItem(id: string): Promise<ItemDetail | null> {
+  const data = await request(`/api/items/${encodeURIComponent(id)}`);
+  if (!data) return null;
+  const item = data.item;
   return {
-    ...item,
-    isOwner: mockAs === "owner",
-    myClaim: mockAs === "claimant" ? { id: "clm_1", status: "PENDING" } : null,
+    id: item.id,
+    title: item.title,
+    type: item.type,
+    category: typeof item.category === "string" ? item.category : item.category.name,
+    location: typeof item.location === "string" ? item.location : item.location.name,
+    date: item.eventDate ?? item.date,
+    status: item.status,
+    description: item.description,
+    locationNote: item.locationNote ?? null,
+    media: (item.media ?? []).map((media: Record<string, unknown>, index: number) => ({ id: String(media.id ?? index), url: String(media.url ?? ""), kind: media.kind === "VIDEO" || media.type === "VIDEO" ? "VIDEO" : "IMAGE" })),
+    postedAt: item.createdAt ?? item.postedAt,
+    poster: { displayName: item.posterName ?? item.poster?.displayName ?? "Anonymous" },
+    isOwner: Boolean(item.isOwner),
+    myClaim: item.myClaim ?? (item.hasClaimed ? { id: "existing", status: "PENDING" } : null),
+    claimCount: Number(item.claimCount ?? 0),
   };
 }
 
-/** Read the Browse filters from the URL. Bad values are ignored. */
 export function parseSearchParams(sp: Record<string, string | string[] | undefined>): ItemSearchParams {
-  const one = (k: string) => {
-    const v = sp[k];
-    return (Array.isArray(v) ? v[0] : v)?.trim() || undefined;
+  const one = (key: string) => {
+    const value = sp[key];
+    return (Array.isArray(value) ? value[0] : value)?.trim() || undefined;
   };
   const type = one("type")?.toUpperCase();
-  const date = (v?: string) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : undefined);
+  const date = (value?: string) => (value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : undefined);
   return {
     q: one("q"),
     type: type === "LOST" || type === "FOUND" ? (type as ItemType) : undefined,

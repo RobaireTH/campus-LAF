@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export interface ItemCardData {
   id: string;
@@ -33,10 +34,13 @@ export default function ItemCard({
           {/* Thumbnail with Fallback */}
           <div className="w-20 h-20 bg-[#F5F2EB] rounded-xl flex items-center justify-center text-xs font-bold text-gray-500 shrink-0 overflow-hidden relative">
             {item.imageUrl ? (
-              <img
+              <Image
                 src={item.imageUrl}
                 alt={item.title}
-                className="w-full h-full object-cover"
+                fill
+                sizes="80px"
+                unoptimized
+                className="object-cover"
               />
             ) : (
               <span className="text-gray-400 text-lg">📦</span>
