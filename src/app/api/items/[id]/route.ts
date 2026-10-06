@@ -1,65 +1,46 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getOptionalUser } from "@/lib/require-user";
+import { getCurrentUser } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { notFound } from "@/lib/http/errors";
+import { route } from "@/lib/http/route";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  const { id } = await params;
-  const user = await getOptionalUser(request);
+export const GET = route<RouteContext<"/api/items/[id]">>(async (_request, ctx) => {
+  const { id } = await ctx.params;
+  const user = await getCurrentUser();
 
-  try {
-    const item = await prisma.item.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        type: true,
-        title: true,
-        description: true,
-        locationNote: true,
-        status: true,
-        eventDate: true,
-        createdAt: true,
-        category: { select: { id: true, name: true } },
-        location: { select: { id: true, name: true } },
-        media: {
-          orderBy: { position: "asc" },
-          select: { key: true, type: true, position: true },
-        },
-        posterId: true,
-        poster: { select: { name: true } },
+  const item = await db.item.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      type: true,
+      title: true,
+      description: true,
+      locationNote: true,
+      status: true,
+      eventDate: true,
+      createdAt: true,
+      category: { select: { id: true, name: true } },
+      location: { select: { id: true, name: true } },
+      media: {
+        orderBy: { position: "asc" },
+        select: { key: true, type: true, position: true },
       },
-    });
+      posterId: true,
+      poster: { select: { name: true } },
+    },
+  });
+  if (!item) throw notFound("Item not found");
 
-    if (!item) {
-      return NextResponse.json({ error: "Item not found" }, { status: 404 });
-    }
+  const existingClaim = user
+    ? await db.claim.findFirst({ where: { itemId: id, claimantId: user.id }, select: { id: true } })
+    : null;
 
-    let hasClaimed = false;
-    if (user) {
-      const existingClaim = await prisma.claim.findFirst({
-        where: { itemId: id, claimantId: user.id },
-        select: { id: true },
-      });
-      hasClaimed = Boolean(existingClaim);
-    }
-
-    const { posterId, poster, ...rest } = item;
-
-    return NextResponse.json({
-      item: {
-        ...rest,
-        posterName: poster.name ?? "Anonymous",
-        isOwner: user ? user.id === posterId : false,
-        hasClaimed,
-      },
-    });
-  } catch (error) {
-    console.error("Failed to fetch item", error);
-    return NextResponse.json(
-      { error: "Failed to fetch item" },
-      { status: 500 },
-    );
-  }
-}
+  const { posterId, poster, ...rest } = item;
+  return Response.json({
+    item: {
+      ...rest,
+      posterName: poster.name ?? "Anonymous",
+      isOwner: user?.id === posterId,
+      hasClaimed: Boolean(existingClaim),
+    },
+  });
+});

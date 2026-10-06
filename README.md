@@ -9,7 +9,7 @@ One full-stack Next.js app: the pages and the API live together. This repo is a 
 - Next.js (App Router) + React + TypeScript
 - Tailwind CSS v4
 - API: Next.js route handlers in `src/app/api/`, validated with zod
-- Auth: NextAuth.js (credentials, JWT sessions)
+- Auth: built in (scrypt passwords, database-backed sessions in an HttpOnly cookie)
 - Database: PostgreSQL on Neon via Prisma
 - Uploads: Cloudflare R2 (presigned URLs)
 
@@ -32,6 +32,8 @@ Open http://localhost:3000. The API health check is at http://localhost:3000/api
 | `npm run build` | Production build |
 | `npm run start` | Run the production build |
 | `npm run lint` | Lint |
+| `npm test` | Unit tests |
+| `npm run test:e2e` | End-to-end API tests (builds the app and runs it against an isolated database schema) |
 | `npm run db:generate` | Generate the Prisma client |
 | `npm run db:migrate` | Create/apply a migration in dev |
 

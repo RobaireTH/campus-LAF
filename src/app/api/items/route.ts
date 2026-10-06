@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { requireUser, AuthError } from "@/lib/require-user";
+import { requireUser } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { ItemStatus, ItemType, Prisma } from "@/generated/prisma/client";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { route } from "@/lib/http/route";
 
 const createItemSchema = z.object({
   type: z.enum(["LOST", "FOUND"]),
@@ -111,7 +112,7 @@ export async function GET(request: NextRequest) {
   };
 
   try {
-    const rows = await prisma.item.findMany({
+    const rows = await db.item.findMany({
       where,
       orderBy,
       take: limit + 1,
@@ -164,16 +165,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
-  let user;
-  try {
-    user = await requireUser(request);
-  } catch (error) {
-    if (error instanceof AuthError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
-    }
-    throw error;
-  }
+export const POST = route(async (request) => {
+  const user = await requireUser();
 
   if (REQUIRE_KYC_TO_POST && user.kycStatus !== "VERIFIED") {
     return NextResponse.json(
@@ -198,7 +191,7 @@ export async function POST(request: NextRequest) {
   const { type, title, description, categoryId, locationId, locationNote, dateLostOrFound, mediaKeys } = parsed.data;
 
   try {
-    const item = await prisma.item.create({
+    const item = await db.item.create({
       data: {
         type,
         title,
@@ -249,4 +242,4 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: "Failed to create item" }, { status: 500 });
   }
-}
+});

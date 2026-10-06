@@ -1,28 +1,15 @@
-import { z } from "zod";
-
-import { getCurrentUser } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { claimRequestSchema } from "@/lib/claims/schema";
 import { submitClaim } from "@/lib/claims/submit";
+import { ApiError } from "@/lib/http/errors";
+import { route } from "@/lib/http/route";
+import { parseBody } from "@/lib/http/validate";
 
-export async function POST(request: Request, ctx: RouteContext<"/api/items/[id]/claims">) {
-  const user = await getCurrentUser();
-  if (!user) {
-    return Response.json({ error: "Sign in to claim an item." }, { status: 401 });
-  }
-
-  const body = await request.json().catch(() => null);
-  const parsed = claimRequestSchema.safeParse(body);
-  if (!parsed.success) {
-    return Response.json(
-      { error: "Invalid claim.", fields: z.flattenError(parsed.error).fieldErrors },
-      { status: 400 },
-    );
-  }
-
+export const POST = route<RouteContext<"/api/items/[id]/claims">>(async (request, ctx) => {
+  const user = await requireUser();
+  const input = await parseBody(request, claimRequestSchema);
   const { id } = await ctx.params;
-  const result = await submitClaim(id, user, parsed.data);
-  if (!result.ok) {
-    return Response.json({ error: result.error }, { status: result.status });
-  }
+  const result = await submitClaim(id, user, input);
+  if (!result.ok) throw new ApiError(result.status, result.error);
   return Response.json(result.claim, { status: 201 });
-}
+});

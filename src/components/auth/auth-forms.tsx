@@ -1,7 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { signIn } from "next-auth/react";
+import { ComponentProps, FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
 
@@ -10,13 +9,19 @@ import { SignInDialog } from "@/components/auth/sign-in-dialog";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PhotoPicker } from "@/components/ui/photo-picker";
+import { ApiRequestError, sendJson } from "@/lib/api-client";
 import { AuthRequiredError, uploadFile } from "@/lib/uploads/client";
 
-function PasswordInput({ id, name, autoComplete }: { id: string; name: string; autoComplete: string }) {
+type PasswordInputProps = { id: string; name: string; autoComplete: string } & Pick<
+  ComponentProps<"input">,
+  "aria-invalid" | "aria-describedby" | "aria-required"
+>;
+
+function PasswordInput({ id, name, autoComplete, ...aria }: PasswordInputProps) {
   const [visible, setVisible] = useState(false);
   return (
     <div className="relative">
-      <Input id={id} name={name} type={visible ? "text" : "password"} autoComplete={autoComplete} minLength={8} required className="pr-12" />
+      <Input id={id} name={name} type={visible ? "text" : "password"} autoComplete={autoComplete} minLength={8} required className="pr-12" {...aria} />
       <button type="button" onClick={() => setVisible((value) => !value)} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted-foreground hover:text-foreground" aria-label={visible ? "Hide password" : "Show password"}>
         {visible ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
       </button>
@@ -34,11 +39,15 @@ export function LoginForm({ callbackUrl = "/" }: { callbackUrl?: string }) {
     setLoading(true);
     setError(undefined);
     const data = new FormData(event.currentTarget);
-    const result = await signIn("credentials", { email: data.get("email"), password: data.get("password"), redirect: false });
-    setLoading(false);
-    if (result?.error) return setError("Email or password is incorrect.");
-    router.push(callbackUrl);
-    router.refresh();
+    try {
+      await sendJson("/api/auth/login", "POST", { email: data.get("email"), password: data.get("password") });
+      router.push(callbackUrl);
+      router.refresh();
+    } catch (cause) {
+      setError(cause instanceof ApiRequestError ? cause.message : "Could not log you in. Try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -55,27 +64,35 @@ export function RegisterForm({ callbackUrl = "/" }: { callbackUrl?: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setError(undefined);
+    setFieldErrors({});
     const data = new FormData(event.currentTarget);
-    const response = await fetch("/api/auth/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.fromEntries(data)) });
-    setLoading(false);
-    if (!response.ok) return setError((await response.json().catch(() => null))?.error ?? "Could not create your account.");
-    await signIn("credentials", { email: data.get("email"), password: data.get("password"), redirect: false });
-    router.push(`/verify-id?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+    try {
+      await sendJson("/api/auth/register", "POST", Object.fromEntries(data));
+      router.push(`/verify-id?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+      router.refresh();
+    } catch (cause) {
+      if (!(cause instanceof ApiRequestError)) return setError("Could not create your account. Try again.");
+      setFieldErrors(cause.fields);
+      setError(Object.keys(cause.fields).length ? undefined : cause.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <form onSubmit={submit} className="space-y-5">
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field id="name" label="Full name" required><Input id="name" name="name" autoComplete="name" placeholder="Ada Okafor" required /></Field>
-        <Field id="phone" label="Phone number" required><Input id="phone" name="phone" type="tel" autoComplete="tel" placeholder="0801 234 5678" required /></Field>
+        <Field id="name" label="Full name" error={fieldErrors.name?.[0]} required><Input id="name" name="name" autoComplete="name" placeholder="Ada Okafor" required /></Field>
+        <Field id="phone" label="Phone number" error={fieldErrors.phone?.[0]} required><Input id="phone" name="phone" type="tel" autoComplete="tel" placeholder="0801 234 5678" required /></Field>
       </div>
-      <Field id="email" label="School email" hint="Use the email issued by your school." required><Input id="email" name="email" type="email" autoComplete="email" placeholder="you@school.edu" required /></Field>
-      <Field id="password" label="Password" hint="At least 8 characters." required><PasswordInput id="password" name="password" autoComplete="new-password" /></Field>
+      <Field id="email" label="School email" hint="Use the email issued by your school." error={fieldErrors.email?.[0]} required><Input id="email" name="email" type="email" autoComplete="email" placeholder="you@school.edu" required /></Field>
+      <Field id="password" label="Password" hint="At least 8 characters." error={fieldErrors.password?.[0]} required><PasswordInput id="password" name="password" autoComplete="new-password" /></Field>
       {error && <p role="alert" className="rounded-md bg-danger-soft p-3 text-small text-danger-soft-foreground">{error}</p>}
       <Button type="submit" size="lg" fullWidth loading={loading}>Create account</Button>
     </form>
