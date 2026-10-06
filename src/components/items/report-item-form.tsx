@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { PhotoPicker } from "@/components/ui/photo-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { uploadFile } from "@/lib/uploads/client";
 
 const categories = [
   ["electronics", "Electronics"],
@@ -29,19 +30,6 @@ const locations = [
   ["other", "Other campus location"],
 ];
 
-async function upload(file: File) {
-  const response = await fetch("/api/uploads", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ purpose: "item", contentType: file.type, size: file.size }),
-  });
-  if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? "Could not prepare an upload.");
-  const result = await response.json();
-  const sent = await fetch(result.uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
-  if (!sent.ok) throw new Error("A photo could not be uploaded.");
-  return result.key as string;
-}
-
 export function ReportItemForm() {
   const router = useRouter();
   const [type, setType] = useState("FOUND");
@@ -58,7 +46,7 @@ export function ReportItemForm() {
     setError(undefined);
     try {
       const form = new FormData(event.currentTarget);
-      const mediaKeys = await Promise.all(photos.map(upload));
+      const mediaKeys = await Promise.all(photos.map((file) => uploadFile(file, "item")));
       const response = await fetch("/api/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

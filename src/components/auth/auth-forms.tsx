@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PhotoPicker } from "@/components/ui/photo-picker";
+import { uploadFile } from "@/lib/uploads/client";
 
 function PasswordInput({ id, name, autoComplete }: { id: string; name: string; autoComplete: string }) {
   const [visible, setVisible] = useState(false);
@@ -89,9 +90,14 @@ export function VerifyIdForm() {
     if (!files[0]) return setError("Add a clear photo of your school ID.");
     setLoading(true);
     setError(undefined);
-    const body = new FormData();
-    body.set("document", files[0]);
-    const response = await fetch("/api/me/verification", { method: "POST", body });
+    let key: string;
+    try {
+      key = await uploadFile(files[0], "kyc");
+    } catch (cause) {
+      setLoading(false);
+      return setError(cause instanceof Error ? cause.message : "Could not upload your ID.");
+    }
+    const response = await fetch("/api/me/verification", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key }) });
     setLoading(false);
     if (!response.ok) return setError((await response.json().catch(() => null))?.error ?? "Could not submit your ID.");
     router.push("/");

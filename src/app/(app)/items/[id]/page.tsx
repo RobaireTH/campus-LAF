@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge, ItemStatusBadge, ItemTypeBadge } from "@/components/ui/badge";
 import { PageContainer } from "@/components/layout/page-container";
 import { friendlyDate, timeAgo } from "@/lib/format";
-import { getItem, type MockViewer } from "@/lib/items/api";
+import { getItem } from "@/lib/items/api";
 import { itemRoutes } from "@/lib/items/routes";
 import type { ItemDetail } from "@/lib/items/types";
 import { getShellUser } from "@/lib/session";
@@ -19,16 +19,13 @@ export async function generateMetadata({ params }: PageProps<"/items/[id]">) {
 }
 
 /** Item details (SOF-38). */
-export default async function ItemPage({ params, searchParams }: PageProps<"/items/[id]">) {
+export default async function ItemPage({ params }: PageProps<"/items/[id]">) {
   const { id } = await params;
-  const sp = await searchParams;
-  // Dev-only: ?as=owner | claimant | member to preview each action area against mock data.
-  const devAs = process.env.NODE_ENV !== "production" && typeof sp.as === "string" ? sp.as : undefined;
-  const item = await getItem(id, devAs === "owner" || devAs === "claimant" ? (devAs as MockViewer) : undefined);
+  const item = await getItem(id);
   if (!item) notFound();
 
   const user = await getShellUser();
-  const signedIn = Boolean(user) || devAs !== undefined;
+  const signedIn = Boolean(user);
 
   return (
     <PageContainer className="lg:pt-6">
