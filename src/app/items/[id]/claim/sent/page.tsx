@@ -1,81 +1,15 @@
-'use client';
+import Link from "next/link";
+import { Check, Clock3, ContactRound, PackageCheck } from "lucide-react";
 
-import React from 'react';
-import Link from 'next/link';
+import { Button } from "@/components/ui/button";
 
-export default function ClaimSentPage() {
-  return (
-    <main className="max-w-md mx-auto min-h-screen bg-[#FDFCF7] px-4 py-4 space-y-6 font-body pb-12">
-      {/* Top Close Button */}
-      <div className="flex justify-start pt-1">
-        <Link href="/dashboard" className="text-gray-900 text-lg font-bold p-1">
-          ✕
-        </Link>
-      </div>
-
-      {/* Hero Icon & Title */}
-      <div className="text-center space-y-2 pt-2">
-        <div className="w-16 h-16 bg-[#FFF2C2] rounded-full flex items-center justify-center mx-auto text-xl font-bold text-gray-900">
-          ➔
-        </div>
-        <h1 className="font-heading text-2xl font-extrabold text-gray-900">
-          Claim sent
-        </h1>
-        <p className="text-xs text-gray-600 max-w-xs mx-auto leading-relaxed">
-          The finder will compare your answers. We&apos;ll notify you as soon as they decide.
-        </p>
-      </div>
-
-      {/* Timeline Card */}
-      <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm space-y-4 text-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 rounded-full bg-[#107C41] text-white flex items-center justify-center text-xs font-bold">
-            ✓
-          </div>
-          <span className="font-bold text-gray-900">Claim submitted</span>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 rounded-full bg-[#6344F5] text-white flex items-center justify-center text-xs font-bold">
-            2
-          </div>
-          <span className="font-bold text-gray-900">Finder reviews your answers</span>
-        </div>
-
-        <div className="flex items-center gap-3 opacity-50">
-          <div className="w-6 h-6 rounded-full bg-[#EFECE6] text-gray-600 flex items-center justify-center text-xs font-bold">
-            3
-          </div>
-          <span className="font-medium text-gray-700">Approved — contact details shared</span>
-        </div>
-
-        <div className="flex items-center gap-3 opacity-50">
-          <div className="w-6 h-6 rounded-full bg-[#EFECE6] text-gray-600 flex items-center justify-center text-xs font-bold">
-            4
-          </div>
-          <span className="font-medium text-gray-700">Meet up and get it back</span>
-        </div>
-      </div>
-
-      {/* Primary Action */}
-      <div className="space-y-3 pt-2">
-        <Link
-          href="/dashboard"
-          className="block w-full py-3.5 bg-white border border-gray-300 text-gray-900 text-center font-bold text-sm rounded-xl hover:bg-gray-50 shadow-sm"
-        >
-          Back to browse
-        </Link>
-
-        {/* Demo Link */}
-        <div className="text-center pt-2">
-          <Link
-            href="/items/1/claims"
-            className="text-xs font-bold text-[#6344F5] hover:underline"
-          >
-            Demo: switch to the finder&apos;s view →
-          </Link>
-        </div>
-      </div>
-    </main>
-  );
+export default async function ClaimSentPage({ params }: PageProps<"/items/[id]/claim/sent">) {
+  const { id } = await params;
+  const steps = [
+    { icon: Check, label: "Claim submitted", active: true },
+    { icon: Clock3, label: "Poster reviews your details", active: true },
+    { icon: ContactRound, label: "Contact details unlock if approved", active: false },
+    { icon: PackageCheck, label: "Meet and complete the handover", active: false },
+  ];
+  return <main className="mx-auto flex min-h-screen w-full max-w-form flex-col justify-center px-gutter py-10"><div className="text-center"><span className="mx-auto flex size-14 items-center justify-center rounded-full bg-success-soft text-success-soft-foreground"><Check className="size-7" aria-hidden /></span><h1 className="mt-4 text-h2">Claim sent</h1><p className="mx-auto mt-2 max-w-sm text-muted-foreground">The poster will review your ownership details. You can track the result from your dashboard.</p></div><ol className="my-8 space-y-1 rounded-xl border bg-card p-5 shadow-card">{steps.map(({ icon: Icon, label, active }, index) => <li key={label} className={`flex items-center gap-3 rounded-lg p-3 ${active ? "text-foreground" : "text-muted-foreground"}`}><span className={`flex size-8 items-center justify-center rounded-full ${active ? "bg-primary text-primary-foreground" : "bg-muted"}`}><Icon className="size-4" aria-hidden /></span><span className="text-small font-medium">{index + 1}. {label}</span></li>)}</ol><div className="flex flex-col gap-2 sm:flex-row"><Button asChild variant="outline" fullWidth><Link href={`/items/${id}`}>Back to item</Link></Button><Button asChild fullWidth><Link href="/dashboard">Track my claims</Link></Button></div></main>;
 }

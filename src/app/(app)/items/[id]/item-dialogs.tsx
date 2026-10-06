@@ -49,11 +49,15 @@ export function DeleteItemButton({ itemId, claimCount }: { itemId: string; claim
             loading={busy}
             onClick={async () => {
               setBusy(true);
-              // TODO(SOF-19): DELETE /api/items/:id (or PATCH status, SOF-13), then redirect.
-              await new Promise((r) => setTimeout(r, 600));
+              const response = await fetch(`/api/items/${itemId}`, { method: "DELETE" });
+              setBusy(false);
+              if (!response.ok) {
+                toast.error((await response.json().catch(() => null))?.error ?? "Could not delete this post");
+                return;
+              }
               toast.success("Post deleted");
               router.push("/");
-              void itemId;
+              router.refresh();
             }}
           >
             Delete post
@@ -76,6 +80,7 @@ const reasons = [
 export function ReportPostButton({ itemId }: { itemId: string }) {
   const [open, setOpen] = React.useState(false);
   const [reason, setReason] = React.useState<string>();
+  const [details, setDetails] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -104,7 +109,7 @@ export function ReportPostButton({ itemId }: { itemId: string }) {
           </Select>
         </Field>
         <Field id="report-details" label="Anything else? (optional)">
-          <Textarea id="report-details" rows={3} />
+          <Textarea id="report-details" rows={3} value={details} onChange={(event) => setDetails(event.target.value)} />
         </Field>
         <DialogFooter>
           <DialogClose asChild>
@@ -115,13 +120,16 @@ export function ReportPostButton({ itemId }: { itemId: string }) {
             loading={busy}
             onClick={async () => {
               setBusy(true);
-              // TODO(SOF-43): send the flag to the admin moderation queue.
-              await new Promise((r) => setTimeout(r, 500));
+              const response = await fetch(`/api/items/${itemId}/reports`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason, details: details.trim() || undefined }) });
               setBusy(false);
+              if (!response.ok) {
+                toast.error((await response.json().catch(() => null))?.error ?? "Could not send this report");
+                return;
+              }
               setOpen(false);
               setReason(undefined);
+              setDetails("");
               toast.success("Thanks — an admin will review this post");
-              void itemId;
             }}
           >
             Send report
