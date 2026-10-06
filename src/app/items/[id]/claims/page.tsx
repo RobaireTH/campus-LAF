@@ -203,7 +203,7 @@ export default function ReviewClaimsPage() {
 
               {/* Description */}
               <p className="text-xs text-gray-600 italic mt-2 leading-relaxed">
-                "{claim.description}"
+                &quot;{claim.description}&quot;
               </p>
 
               {/* Proof Photo (Tap to Enlarge) */}

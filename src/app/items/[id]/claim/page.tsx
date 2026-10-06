@@ -89,7 +89,7 @@ export default function ClaimFormPage() {
           </button>
         </div>
         {/* Demo Switcher */}
-        <p className="text-[10px] text-gray-400 pt-6">Demo State Switcher: Click "Log in" above to restore claim form</p>
+        <p className="text-[10px] text-gray-400 pt-6">Demo State Switcher: Click &quot;Log in&quot; above to restore claim form</p>
       </main>
     );
   }
@@ -193,7 +193,7 @@ export default function ClaimFormPage() {
       {/* Form Title & Subtitle */}
       <div className="space-y-1 pt-1">
         <h2 className="font-heading text-lg font-extrabold text-gray-900">
-          Prove it's yours
+          Prove it&apos;s yours
         </h2>
         <p className="text-xs text-gray-500 leading-relaxed">
           The finder compares your answers with what they know about the item.
@@ -205,7 +205,7 @@ export default function ClaimFormPage() {
         {/* Finder Question Input */}
         <div className="space-y-1.5">
           <label className="block text-xs font-bold text-gray-800">
-            The finder asks: What's written on the back? *
+            The finder asks: What&apos;s written on the back? *
           </label>
           <input
             type="text"
