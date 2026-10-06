@@ -88,6 +88,7 @@ model Item {
     description String
     status      ItemStatus @default(OPEN)
     eventDate   DateTime
+    locationNote String?
 
     categoryId  String
     category    Category @relation(fields: [categoryId], references: [id])
