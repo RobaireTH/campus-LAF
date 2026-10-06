@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, ClipboardList, Inbox, PackageCheck, Plus, Search } from "lucide-react";
 
+import { SignInDialog } from "@/components/auth/sign-in-dialog";
 import { Badge, ItemStatusBadge, ItemTypeBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,11 +20,12 @@ export function DashboardView() {
   const [loading, setLoading] = useState(true);
   const [postError, setPostError] = useState<string>();
   const [claimError, setClaimError] = useState<string>();
+  const [authRequired, setAuthRequired] = useState(false);
 
   useEffect(() => {
     Promise.allSettled([
-      fetch("/api/me/items").then(async (response) => { if (!response.ok) throw new Error(response.status === 401 ? "Log in to view your posts." : "Posts are unavailable right now."); setPosts((await response.json()).items ?? []); }),
-      fetch("/api/me/claims").then(async (response) => { if (!response.ok) throw new Error(response.status === 401 ? "Log in to view your claims." : "Claims are unavailable right now."); setClaims((await response.json()).claims ?? []); }),
+      fetch("/api/me/items").then(async (response) => { if (response.status === 401) setAuthRequired(true); if (!response.ok) throw new Error(response.status === 401 ? "Sign in to view your posts." : "Posts are unavailable right now."); setPosts((await response.json()).items ?? []); }),
+      fetch("/api/me/claims").then(async (response) => { if (response.status === 401) setAuthRequired(true); if (!response.ok) throw new Error(response.status === 401 ? "Sign in to view your claims." : "Claims are unavailable right now."); setClaims((await response.json()).claims ?? []); }),
     ]).then((results) => {
       if (results[0].status === "rejected") setPostError(results[0].reason.message);
       if (results[1].status === "rejected") setClaimError(results[1].reason.message);
@@ -46,6 +48,7 @@ export function DashboardView() {
         <TabsContent value="posts"><RecordList loading={loading} error={postError} emptyTitle="No posts yet" emptyCopy="Report a lost or found item to see it here." actionHref="/report" actionLabel="Report an item">{posts.map((post) => <Link key={post.id} href={`/items/${post.id}`} className="flex items-center gap-4 border-b px-4 py-4 last:border-0 hover:bg-muted/60"><div className="min-w-0 flex-1"><div className="mb-1.5 flex flex-wrap items-center gap-2"><ItemTypeBadge type={post.type} /><ItemStatusBadge status={post.status} /></div><p className="truncate font-semibold">{post.title}</p><p className="text-small text-muted-foreground">{friendlyDate(post.eventDate)} · {post.claimCount} {post.claimCount === 1 ? "claim" : "claims"}</p></div><ArrowRight className="size-5 text-muted-foreground" aria-hidden /></Link>)}</RecordList></TabsContent>
         <TabsContent value="claims"><RecordList loading={loading} error={claimError} emptyTitle="No claims yet" emptyCopy="When you claim an item, its progress appears here." actionHref="/" actionLabel="Browse items">{claims.map((claim) => <Link key={claim.id} href={`/items/${claim.item.id}`} className="flex items-center gap-4 border-b px-4 py-4 last:border-0 hover:bg-muted/60"><div className="min-w-0 flex-1"><div className="mb-1.5 flex flex-wrap items-center gap-2"><ItemTypeBadge type={claim.item.type} /><Badge variant={claim.status === "APPROVED" ? "success" : claim.status === "REJECTED" ? "danger" : "warning"}>{claim.status.toLowerCase()}</Badge></div><p className="truncate font-semibold">{claim.item.title}</p><p className="text-small text-muted-foreground">Submitted {friendlyDate(claim.createdAt)}</p></div><ArrowRight className="size-5 text-muted-foreground" aria-hidden /></Link>)}</RecordList></TabsContent>
       </Tabs>
+      <SignInDialog open={authRequired} onOpenChange={setAuthRequired} callbackUrl="/dashboard" title="Sign in to open your dashboard" description="Your posts, claims, and return history are private to your account." />
     </div>
   );
 }

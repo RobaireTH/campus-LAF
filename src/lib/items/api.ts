@@ -27,7 +27,13 @@ export async function searchItems(params: ItemSearchParams): Promise<ItemSearchR
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined) query.set(key, String(value));
   });
-  const data = await request(`/api/items?${query}`);
+  let data;
+  try {
+    data = await request(`/api/items?${query}`);
+  } catch (error) {
+    if (process.env.NODE_ENV === "production") throw error;
+    return previewItems(params);
+  }
   const items: ItemCardData[] = (data?.items ?? []).map((item: Record<string, unknown>) => ({
     id: String(item.id),
     title: String(item.title),
@@ -42,7 +48,14 @@ export async function searchItems(params: ItemSearchParams): Promise<ItemSearchR
 }
 
 export async function getItem(id: string): Promise<ItemDetail | null> {
-  const data = await request(`/api/items/${encodeURIComponent(id)}`);
+  let data;
+  try {
+    data = await request(`/api/items/${encodeURIComponent(id)}`);
+  } catch (error) {
+    if (process.env.NODE_ENV === "production") throw error;
+    const { mockItems } = await import("./mock-data");
+    return mockItems.find((item) => item.id === id) ?? null;
+  }
   if (!data) return null;
   const item = data.item;
   return {
@@ -61,6 +74,34 @@ export async function getItem(id: string): Promise<ItemDetail | null> {
     isOwner: Boolean(item.isOwner),
     myClaim: item.myClaim ?? (item.hasClaimed ? { id: "existing", status: "PENDING" } : null),
     claimCount: Number(item.claimCount ?? 0),
+  };
+}
+
+async function previewItems(params: ItemSearchParams): Promise<ItemSearchResponse> {
+  const { categoryLabel, locationLabel, mockItems } = await import("./mock-data");
+  const query = params.q?.trim().toLowerCase();
+  const from = params.from ? new Date(`${params.from}T00:00:00`).getTime() : null;
+  const to = params.to ? new Date(`${params.to}T23:59:59`).getTime() : null;
+  const filtered = mockItems.filter((item) => {
+    if (item.status !== "OPEN") return false;
+    if (params.type && item.type !== params.type) return false;
+    if (params.category && item.category !== categoryLabel(params.category)) return false;
+    if (params.location && item.location !== locationLabel(params.location)) return false;
+    const timestamp = new Date(item.date).getTime();
+    if (from && timestamp < from) return false;
+    if (to && timestamp > to) return false;
+    return !query || `${item.title} ${item.description}`.toLowerCase().includes(query);
+  }).sort((left, right) => {
+    const difference = new Date(right.postedAt).getTime() - new Date(left.postedAt).getTime();
+    return params.sort === "oldest" ? -difference : difference;
+  });
+  const start = params.cursor ? Number(params.cursor) || 0 : 0;
+  const limit = params.limit ?? 12;
+  const page = filtered.slice(start, start + limit);
+  return {
+    items: page.map((item) => ({ id: item.id, title: item.title, type: item.type, category: item.category, location: item.location, date: item.date, status: item.status, thumbnailUrl: item.media.find((media) => media.kind === "IMAGE")?.url ?? null })),
+    nextCursor: start + limit < filtered.length ? String(start + limit) : null,
+    total: filtered.length,
   };
 }
 

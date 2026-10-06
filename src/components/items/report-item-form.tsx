@@ -5,30 +5,14 @@ import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SignInDialog } from "@/components/auth/sign-in-dialog";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PhotoPicker } from "@/components/ui/photo-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { uploadFile } from "@/lib/uploads/client";
-
-const categories = [
-  ["electronics", "Electronics"],
-  ["bags", "Bags"],
-  ["documents", "IDs & documents"],
-  ["clothing", "Clothing"],
-  ["keys", "Keys"],
-  ["other", "Other"],
-];
-
-const locations = [
-  ["library", "Library"],
-  ["engineering", "Engineering block"],
-  ["student-centre", "Student centre"],
-  ["sports-centre", "Sports centre"],
-  ["hostels", "Hostels"],
-  ["other", "Other campus location"],
-];
+import { categories, locations } from "@/lib/items/options";
+import { AuthRequiredError, uploadFile } from "@/lib/uploads/client";
 
 export function ReportItemForm() {
   const router = useRouter();
@@ -38,6 +22,7 @@ export function ReportItemForm() {
   const [photos, setPhotos] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
+  const [authRequired, setAuthRequired] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -62,18 +47,20 @@ export function ReportItemForm() {
         }),
       });
       const result = await response.json().catch(() => null);
+      if (response.status === 401) throw new AuthRequiredError("Sign in to publish this report.");
       if (!response.ok) throw new Error(result?.error ?? "Could not publish this report.");
       router.push(`/items/${result.item.id}`);
       router.refresh();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not publish this report.");
+      if (cause instanceof AuthRequiredError) setAuthRequired(true);
+      else setError(cause instanceof Error ? cause.message : "Could not publish this report.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <form onSubmit={submit} className="space-y-7">
+    <><form onSubmit={submit} className="space-y-7">
       <fieldset className="space-y-2">
         <legend className="text-small font-semibold">What happened?</legend>
         <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted p-1">
@@ -87,8 +74,8 @@ export function ReportItemForm() {
       <Field id="title" label="Item name" hint="Use a short name people can scan quickly." required><Input id="title" name="title" minLength={3} maxLength={120} placeholder="Black Jansport backpack" required /></Field>
       <Field id="description" label="Description" hint="Do not reveal every identifying detail." required><Textarea id="description" name="description" minLength={10} maxLength={2000} placeholder="Colour, brand, condition, and anything visible..." required /></Field>
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field id="category" label="Category" required><Select value={categoryId} onValueChange={setCategoryId}><SelectTrigger id="category"><SelectValue placeholder="Choose category" /></SelectTrigger><SelectContent>{categories.map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select></Field>
-        <Field id="location" label="Campus location" required><Select value={locationId} onValueChange={setLocationId}><SelectTrigger id="location"><SelectValue placeholder="Choose location" /></SelectTrigger><SelectContent>{locations.map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select></Field>
+        <Field id="category" label="Category" required><Select value={categoryId} onValueChange={setCategoryId}><SelectTrigger id="category"><SelectValue placeholder="Choose category" /></SelectTrigger><SelectContent>{categories.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></Field>
+        <Field id="location" label="Campus location" required><Select value={locationId} onValueChange={setLocationId}><SelectTrigger id="location"><SelectValue placeholder="Choose location" /></SelectTrigger><SelectContent>{locations.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></Field>
       </div>
       <Field id="locationNote" label="Where exactly?" hint="A landmark or room makes matching easier."><Input id="locationNote" name="locationNote" maxLength={200} placeholder="Near the library entrance" /></Field>
       <Field id="dateLostOrFound" label={type === "LOST" ? "Date lost" : "Date found"} required><Input id="dateLostOrFound" name="dateLostOrFound" type="date" max={new Date().toISOString().slice(0, 10)} required /></Field>
@@ -96,6 +83,6 @@ export function ReportItemForm() {
       <div className="flex gap-3 rounded-lg bg-accent p-4 text-small text-accent-foreground"><CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden /><p>Contact details stay private until a claim is approved.</p></div>
       {error && <p role="alert" className="flex gap-2 rounded-lg bg-danger-soft p-4 text-small text-danger-soft-foreground"><AlertCircle className="mt-0.5 size-5 shrink-0" aria-hidden />{error}</p>}
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button type="button" variant="ghost" onClick={() => router.back()}>Cancel</Button><Button type="submit" size="lg" loading={loading}>{type === "LOST" ? "Publish lost item" : "Publish found item"}</Button></div>
-    </form>
+    </form><SignInDialog open={authRequired} onOpenChange={setAuthRequired} callbackUrl="/report" title="Sign in to report an item" description="We need an account before photos can be uploaded or a campus report can be published." /></>
   );
 }

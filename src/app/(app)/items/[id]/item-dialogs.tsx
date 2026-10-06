@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Flag, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SignInDialog } from "@/components/auth/sign-in-dialog";
 import {
   Dialog,
   DialogClose,
@@ -24,8 +25,9 @@ import { toast } from "@/components/ui/toast";
 export function DeleteItemButton({ itemId, claimCount }: { itemId: string; claimCount: number }) {
   const router = useRouter();
   const [busy, setBusy] = React.useState(false);
+  const [authRequired, setAuthRequired] = React.useState(false);
   return (
-    <Dialog>
+    <><Dialog>
       <DialogTrigger asChild>
         <Button variant="ghost" className="text-danger hover:bg-danger-soft">
           <Trash2 /> Delete
@@ -49,18 +51,26 @@ export function DeleteItemButton({ itemId, claimCount }: { itemId: string; claim
             loading={busy}
             onClick={async () => {
               setBusy(true);
-              // TODO(SOF-19): DELETE /api/items/:id (or PATCH status, SOF-13), then redirect.
-              await new Promise((r) => setTimeout(r, 600));
+              const response = await fetch(`/api/items/${itemId}`, { method: "DELETE" });
+              setBusy(false);
+              if (response.status === 401) {
+                setAuthRequired(true);
+                return;
+              }
+              if (!response.ok) {
+                toast.error((await response.json().catch(() => null))?.error ?? "Could not delete this post");
+                return;
+              }
               toast.success("Post deleted");
               router.push("/");
-              void itemId;
+              router.refresh();
             }}
           >
             Delete post
           </Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog>
+    </Dialog><SignInDialog open={authRequired} onOpenChange={setAuthRequired} callbackUrl={`/items/${itemId}`} title="Sign in to manage this post" /></>
   );
 }
 
@@ -76,9 +86,11 @@ const reasons = [
 export function ReportPostButton({ itemId }: { itemId: string }) {
   const [open, setOpen] = React.useState(false);
   const [reason, setReason] = React.useState<string>();
+  const [details, setDetails] = React.useState("");
   const [busy, setBusy] = React.useState(false);
+  const [authRequired, setAuthRequired] = React.useState(false);
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <><Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="link" size="sm" className="text-muted-foreground">
           <Flag /> Report this post
@@ -104,7 +116,7 @@ export function ReportPostButton({ itemId }: { itemId: string }) {
           </Select>
         </Field>
         <Field id="report-details" label="Anything else? (optional)">
-          <Textarea id="report-details" rows={3} />
+          <Textarea id="report-details" rows={3} value={details} onChange={(event) => setDetails(event.target.value)} />
         </Field>
         <DialogFooter>
           <DialogClose asChild>
@@ -115,19 +127,27 @@ export function ReportPostButton({ itemId }: { itemId: string }) {
             loading={busy}
             onClick={async () => {
               setBusy(true);
-              // TODO(SOF-43): send the flag to the admin moderation queue.
-              await new Promise((r) => setTimeout(r, 500));
+              const response = await fetch(`/api/items/${itemId}/reports`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason, details: details.trim() || undefined }) });
               setBusy(false);
+              if (response.status === 401) {
+                setOpen(false);
+                setAuthRequired(true);
+                return;
+              }
+              if (!response.ok) {
+                toast.error((await response.json().catch(() => null))?.error ?? "Could not send this report");
+                return;
+              }
               setOpen(false);
               setReason(undefined);
+              setDetails("");
               toast.success("Thanks — an admin will review this post");
-              void itemId;
             }}
           >
             Send report
           </Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog>
+    </Dialog><SignInDialog open={authRequired} onOpenChange={setAuthRequired} callbackUrl={`/items/${itemId}`} title="Sign in to report this post" description="Reports are private, but they must come from a campus account so moderators can prevent abuse." /></>
   );
 }
