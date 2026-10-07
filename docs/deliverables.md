@@ -189,12 +189,13 @@ Deferred until after the MVP, so nothing is built in this section. The bell and 
 
 ## Section 9. UI integration: dashboard, claims, handover, notifications, admin
 
-- [ ] 9.1 Dashboard with my items and my claims
-- [ ] 9.2 Claim submission connected to uploads and the API
-- [ ] 9.3 Claim review (approve, reject) on the real API
-- [ ] 9.4 Handover on the real API: contact details, code, complete, cancel
+- [x] 9.1 Dashboard read through the services: my posts with the claims waiting for review and a way into each handover, my claims with how each one is going (waiting, approved, returned, not approved, cancelled), the counts at the top, and a link straight to the claims tab (`/dashboard?tab=claims`)
+- [x] 9.2 Claim submission on the real API: the page loads the post and explains why a claim can't be sent (your own post, a claim already waiting or approved, already claimed or returned), asks the owner for proof on a found post and the finder for details on a lost one, sends one `Idempotency-Key` per form, shows errors under the field, and reuses photos that already uploaded when a submit is retried
+- [x] 9.3 Claim review on the real API: proof shown as thumbnails that open full size (photos and video), approving and rejecting each ask first, decided claims lose their buttons, and an approved claim leads to the handover
+- [x] 9.4 Handover on the real API: the other person's name, phone and a WhatsApp link, the shared code with a copy button, completing and cancelling each ask first, and clear screens for not approved yet, returned and cancelled
 - [x] 9.5 Notifications are deferred (D16): the bell and the Notifications page were hidden in 8.5
-- [ ] 9.6 Admin moderation and verification screens on the real API
+- [x] 9.6 Admin on the real API: ID reviews with the photo to open full size and a rejection dialog (quick reasons plus an optional note), reports with a confirmation before a post is removed, and a Posts tab that searches, filters, pages and removes any post; each tab can be linked to (`/admin?tab=posts`)
+- [ ] 9.7 Click through the whole journey in a browser with two accounts (post, claim, review, approve, hand over, complete) and the admin screens
 
 ## Section 10. States, responsive, accessibility
 
@@ -213,8 +214,9 @@ Deferred until after the MVP, so nothing is built in this section. The bell and 
 Not in your original list. Added so the app can be set up and presented on one machine without any cloud account.
 
 - [x] L.1 A fully local stack: a Postgres container, a small local file store for photos, `.env.local` with generated passwords, and `npm run local:setup`, `local:start`, `local:stop`, `local:reset` and `local:demo`. Browser uploads work with no bucket CORS policy (2.6 stays open for the real bucket)
-- [x] L.2 Demo data with real photos: 8 accounts, 23 posts (open, claimed, returned and removed) with 24 CC0 stock photos, 6 claims with proof, 3 reports, two IDs waiting for review and one rejected with a reason. Safe to run again, and it refuses to run against a database that is not on your machine
+- [x] L.2 Demo data with real photos: 8 accounts, 23 posts (open, claimed, returned and removed) with 24 CC0 stock photos, 6 claims with proof, 3 reports, two IDs waiting for review and one rejected with a reason. Safe to run again, and it refuses to run against a database that is not on your machine unless `ALLOW_DEMO_SEED=1` is set (L.4)
 - [x] L.3 Tests: the file store, the consistency of the demo data, and the seed run against the real API routes
+- [x] L.4 The same demo data is in the shared Neon database and the real R2 bucket (D30): 8 accounts that share `SEED_DEMO_PASSWORD`, 23 posts, 6 claims, 3 reports and the photos. Running the seed again resets it
 
 ## Open items outside the code
 
@@ -258,6 +260,10 @@ Password reset, email verification, social login, in-app notifications until aft
 | D24 | What the edit form changes | Text, date, category and location; photos stay fixed |
 | D25 | Where the demo runs | Fully local: a Postgres container and a local file store, so it is fast, works offline and leaves the shared Neon database alone. Neon and R2 stay as they are |
 | D26 | Where the demo photos come from | CC0 stock photos from StockSnap, found through Openverse, committed with credits; the ID cards and receipts are synthetic. Chosen while building at your request, so open to change |
+| D27 | Proof files on the review screen | Thumbnails on the page that open full size, so the poster compares claims without leaving it (a link that opens each file in a new tab was the alternative) |
+| D28 | Rejecting an ID | The admin picks a quick reason and can add a note; they are joined into one message of at most 200 characters. Through the API the default message still applies when no reason is given |
+| D29 | Confirmations | Every consequential action asks first: approving or rejecting a claim, marking an item returned, cancelling a handover and removing a post. Rejecting an ID has its own dialog |
+| D30 | Demo data in the cloud | Also seeded into the shared Neon database and the real R2 bucket, at your request on 7 October 2026. This changes D25: the local stack stays, and the seed needs `ALLOW_DEMO_SEED=1` to run against a database that is not on your machine |
 
 Defaults accepted with the Sections 0 and 1 plan: Node `scrypt` password hashing; cookie `findr_session`, HttpOnly, SameSite=Lax, Secure over HTTPS, 14 days; Origin check on state-changing requests; phone numbers normalised to +234 format; rate-limit counters in the database; API end-to-end tests over real HTTP; server pages read through shared service functions; in-app notifications only.
 
@@ -274,3 +280,5 @@ Defaults accepted with the Section 7 plan: housekeeping prunes expired sessions,
 Defaults accepted with the Section 8 plan: pages read through the services rather than their own API; categories and locations are listed alphabetically with Other last; signed-in users who open login or register go straight to their callback; an edit page is a 404 for anyone but the owner, admins included, and explains why when the post is no longer open; the claim, claim review and handover pages are guarded by a layout because they stay client pages until section 9; the bell is gone and `/notifications` is a 404. A caveat of the app shell's loading skeleton: pages inside it start streaming before a guard runs, so a guard redirect there reaches the browser as a client redirect and a not-found as a 200 page marked `noindex`, not as a 307 or 404 status. The API routes still answer 401, 403 and 404 properly.
 
 Calls made while building Sections 0 and 1, open to change: the `pg` driver adapter everywhere; per-IP rate limits kept generous because campus networks share IPs (see `src/lib/auth/limits.ts`); migrations generated by diffing schema files and applied with `migrate deploy`.
+
+Defaults accepted with the Section 9 plan: the dashboard, claim, claim review, handover and admin pages read through the services, and each guards itself, so the three layout guards are gone; the claim wording depends on whether the post is lost or found; "claims to review" counts pending claims only; the handover contact says whether that person posted the item or sent the claim; `/api/me/items` adds `pendingClaimCount` and `handoverClaimId`, and `/api/me/claims` adds the post's status; the dashboard and the admin page open on the tab named in `?tab=`; ID photos open in the same full-size viewer as claim proof.
