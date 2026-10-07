@@ -53,14 +53,15 @@ export async function seedTaxonomy(client: PrismaClient) {
   };
 }
 
-export async function seedAdmin(client: PrismaClient, password: string) {
+export async function seedAdmin(client: PrismaClient, password: string, options: { resetPassword?: boolean } = {}) {
+  const passwordHash = await hashPassword(password);
   return client.user.upsert({
     where: { email: ADMIN_EMAIL },
-    update: {},
+    update: options.resetPassword ? { password: passwordHash, role: "ADMIN", kycStatus: "VERIFIED" } : {},
     create: {
       email: ADMIN_EMAIL,
       name: "Campus LAF Admin",
-      password: await hashPassword(password),
+      password: passwordHash,
       role: "ADMIN",
       kycStatus: "VERIFIED",
     },

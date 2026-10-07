@@ -13,7 +13,7 @@ async function main() {
   const taxonomy = await seedTaxonomy(db);
 
   console.log("Seeding admin user...");
-  const admin = await seedAdmin(db, adminPassword);
+  const admin = await seedAdmin(db, adminPassword, { resetPassword: process.env.RESET_ADMIN_PASSWORD === "1" });
 
   console.log("Seeding sample items...");
   await seedSampleItems(db, admin.id, taxonomy);

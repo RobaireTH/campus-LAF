@@ -29,8 +29,12 @@ function matchesWord(word: string): Prisma.ItemWhereInput {
   };
 }
 
+export function matchesText(q: string | undefined): Prisma.ItemWhereInput[] {
+  return (q ?? "").split(/\s+/).filter(Boolean).slice(0, MAX_WORDS).map(matchesWord);
+}
+
 export function buildItemWhere(search: ItemSearch): Prisma.ItemWhereInput {
-  const words = (search.q ?? "").split(/\s+/).filter(Boolean).slice(0, MAX_WORDS);
+  const text = matchesText(search.q);
   return {
     status: search.status ?? "OPEN",
     ...(search.type && { type: search.type }),
@@ -42,6 +46,6 @@ export function buildItemWhere(search: ItemSearch): Prisma.ItemWhereInput {
         ...(search.to && { lt: dayAfter(search.to) }),
       },
     }),
-    ...(words.length > 0 && { AND: words.map(matchesWord) }),
+    ...(text.length > 0 && { AND: text }),
   };
 }

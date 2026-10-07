@@ -61,10 +61,16 @@ model User {
     kycIdImageKey String?
     kycSubmittedAt     DateTime?
     kycRejectionReason String?
+    kycReviewedAt      DateTime?
+    kycReviewedById    String?
+    kycReviewedBy      User?   @relation("KycReviewer", fields: [kycReviewedById], references: [id])
+    kycReviewed        User[]  @relation("KycReviewer")
 
     items Item[]
     claims Claim[]
     sessions Session[]
+    reportsMade Report[] @relation("ReportReporter")
+    reportsDecided Report[] @relation("ReportDecider")
 
     createdAt DateTime @default(now())
 
@@ -88,6 +94,33 @@ model RateLimit {
     key     String   @id
     count   Int
     resetAt DateTime
+}
+
+enum ReportStatus {
+    OPEN
+    DISMISSED
+    ACTIONED
+}
+
+model Report {
+    id        String       @id @default(cuid())
+    reason    String
+    details   String?
+    status    ReportStatus @default(OPEN)
+    createdAt DateTime     @default(now())
+    decidedAt DateTime?
+
+    itemId String
+    item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+    reporterId String
+    reporter   User   @relation("ReportReporter", fields: [reporterId], references: [id])
+
+    decidedById String?
+    decidedBy   User?   @relation("ReportDecider", fields: [decidedById], references: [id])
+
+    @@unique([itemId, reporterId])
+    @@index([status, createdAt])
 }
 
 model IdempotencyKey {
@@ -136,6 +169,7 @@ model Item {
 
     media ItemMedia[]
     claims Claim[]
+    reports Report[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt

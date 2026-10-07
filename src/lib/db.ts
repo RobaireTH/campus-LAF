@@ -3,12 +3,13 @@ import net from "node:net";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 
-import { PrismaClient } from "@/generated/prisma/client";
+import { Prisma, PrismaClient } from "@/generated/prisma/client";
 
 net.setDefaultAutoSelectFamily(false);
 dns.setDefaultResultOrder("ipv4first");
 
 const LEGACY_SSL_MODES = new Set(["prefer", "require", "verify-ca"]);
+const SCHEMA_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 export function connectionConfig(connectionUrl: string) {
   const url = new URL(connectionUrl);
@@ -16,6 +17,12 @@ export function connectionConfig(connectionUrl: string) {
   url.searchParams.delete("schema");
   if (LEGACY_SSL_MODES.has(url.searchParams.get("sslmode") ?? "")) url.searchParams.set("sslmode", "verify-full");
   return { connectionString: url.toString(), schema };
+}
+
+export function qualifiedTable(table: string, connectionUrl = process.env.DATABASE_URL) {
+  const schema = connectionUrl ? connectionConfig(connectionUrl).schema : undefined;
+  if (schema !== undefined && !SCHEMA_NAME.test(schema)) throw new Error("The schema in DATABASE_URL is not a valid name");
+  return Prisma.raw(schema ? `"${schema}"."${table}"` : `"${table}"`);
 }
 
 export function createDbClient(connectionUrl: string) {

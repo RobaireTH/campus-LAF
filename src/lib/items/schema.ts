@@ -1,16 +1,13 @@
 import { z } from "zod";
 
+import { blankToNull, optional } from "@/lib/http/fields";
+
 export const MAX_ITEM_MEDIA = 5;
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 50;
 
 const FUTURE_TOLERANCE_MS = 24 * 60 * 60 * 1000;
 const EARLIEST_DATE = Date.UTC(2000, 0, 1);
-
-const blankToUndefined = (value: unknown) => (typeof value === "string" && value.trim() === "" ? undefined : value);
-const blankToNull = (value: unknown) => (typeof value === "string" && value.trim() === "" ? null : value);
-
-const optional = <Schema extends z.ZodType>(schema: Schema) => z.preprocess(blankToUndefined, schema.optional());
 
 const day = z
   .string()

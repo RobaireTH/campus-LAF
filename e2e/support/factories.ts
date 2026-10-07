@@ -4,6 +4,7 @@ import type { ItemStatus, KycStatus, Prisma, Role } from "@/generated/prisma/cli
 import { hashPassword } from "@/lib/auth/password";
 import { SESSION_COOKIE, createSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { buildObjectKey } from "@/lib/uploads/keys";
 
 import { ApiClient } from "./client";
 
@@ -99,6 +100,17 @@ export function createClaim(
   return db.claim.create({
     data: { itemId, claimantId, proofText: "My initials are stitched inside the lining.", ...overrides },
   });
+}
+
+export function createAdmin() {
+  return createSignedInUser({ role: "ADMIN", kycStatus: "VERIFIED" });
+}
+
+export async function createPendingVerification(submittedAt = new Date()) {
+  const { user, client } = await createSignedInUser({ kycStatus: "PENDING" });
+  const key = buildObjectKey("kyc", user.id, "image/jpeg");
+  await db.user.update({ where: { id: user.id }, data: { kycIdImageKey: key, kycSubmittedAt: submittedAt } });
+  return { user, client, key };
 }
 
 interface ScenarioOptions {

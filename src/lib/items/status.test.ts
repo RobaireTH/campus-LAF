@@ -38,6 +38,27 @@ describe("transitionItem", () => {
     expect(updateMany).toHaveBeenCalledWith({ where: { id: "itm_1", status: "OPEN" }, data: { status: "CLAIMED" } });
   });
 
+  it("moves an item out of any of several statuses in one guarded update", async () => {
+    const { tx, updateMany } = fakeTransaction(1);
+
+    const moved = await transitionItem(tx, { itemId: "itm_1", from: ["OPEN", "CLAIMED", "RESOLVED"], to: "REMOVED" });
+
+    expect(moved).toBe(true);
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: "itm_1", status: { in: ["OPEN", "CLAIMED", "RESOLVED"] } },
+      data: { status: "REMOVED" },
+    });
+  });
+
+  it("refuses the whole move when any listed status cannot reach the target", async () => {
+    const { tx, updateMany } = fakeTransaction(1);
+
+    await expect(transitionItem(tx, { itemId: "itm_1", from: ["OPEN", "REMOVED"], to: "REMOVED" })).rejects.toThrow(
+      "Illegal item transition from REMOVED to REMOVED",
+    );
+    expect(updateMany).not.toHaveBeenCalled();
+  });
+
   it("restricts the update to the poster when asked", async () => {
     const { tx, updateMany } = fakeTransaction(1);
 

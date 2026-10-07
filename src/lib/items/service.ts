@@ -2,6 +2,7 @@ import "server-only";
 
 import type { Prisma } from "@/generated/prisma/client";
 import type { CurrentUser } from "@/lib/auth";
+import { cancelOpenClaims } from "@/lib/claims/close";
 import { TRANSACTION_OPTIONS, db } from "@/lib/db";
 import { badRequest, conflict, forbidden, notFound, type FieldErrors } from "@/lib/http/errors";
 import { mediaKind, ownsUpload } from "@/lib/uploads/keys";
@@ -186,12 +187,7 @@ export async function updateItem(user: CurrentUser, id: string, input: UpdateIte
 export async function removeItem(user: CurrentUser, id: string) {
   const removed = await db.$transaction(async (tx) => {
     const moved = await transitionItem(tx, { itemId: id, from: "OPEN", to: "REMOVED", posterId: user.id });
-    if (moved) {
-      await tx.claim.updateMany({
-        where: { itemId: id, status: "PENDING" },
-        data: { status: "CANCELLED", decidedAt: new Date() },
-      });
-    }
+    if (moved) await cancelOpenClaims(tx, id, ["PENDING"]);
     return moved;
   }, TRANSACTION_OPTIONS);
   if (removed) return { id, status: "REMOVED" as const };
