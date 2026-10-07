@@ -153,7 +153,10 @@ describe("PATCH /api/claims/:id conflicts", () => {
     ["reject", "CANCELLED", "REJECT", "already cancelled"],
   ] as const)("refuses to %s a %s claim", async (_verb, status, decision, message) => {
     const { posterClient, claim } = await createClaimScenario();
-    await db.claim.update({ where: { id: claim.id }, data: { status, decidedAt: new Date() } });
+    await db.claim.update({
+      where: { id: claim.id },
+      data: { status, decidedAt: new Date(), ...(status === "APPROVED" && { handoverCode: "ABC234" }) },
+    });
 
     const result = await decide(posterClient, claim.id, decision);
 

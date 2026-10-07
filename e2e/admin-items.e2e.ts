@@ -39,7 +39,9 @@ const listItems = (client: ApiClient, tag: string, query = "") =>
   client.get<AdminItemsBody>(`/api/admin/items?q=${tag}${query}`);
 
 async function reportBy(itemId: string, status: "OPEN" | "DISMISSED" = "OPEN") {
-  return db.report.create({ data: { itemId, reporterId: (await createUser()).id, reason: "spam", status } });
+  return db.report.create({
+    data: { itemId, reporterId: (await createUser()).id, reason: "spam", status, decidedAt: status === "OPEN" ? undefined : new Date() },
+  });
 }
 
 async function approvedScenario() {
@@ -102,8 +104,8 @@ describe("GET /api/admin/items", () => {
     const { client } = await createAdmin();
     const tag = newTag();
     const poster = await createUser();
-    const lostKeys = await createItem(poster.id, { title: `Lost keys ${tag}`, createdAt: minutesAgo(1) });
-    const foundKeys = await createItem(poster.id, { title: `Found keys ${tag}`, type: "FOUND", createdAt: minutesAgo(2) });
+    const lostFlask = await createItem(poster.id, { title: `Lost flask ${tag}`, createdAt: minutesAgo(1) });
+    const foundFlask = await createItem(poster.id, { title: `Found flask ${tag}`, type: "FOUND", createdAt: minutesAgo(2) });
     const removedBag = await createItem(poster.id, {
       title: `Black bag ${tag}`,
       status: "REMOVED",
@@ -112,13 +114,13 @@ describe("GET /api/admin/items", () => {
     const idsFor = async (query: string) => (await listItems(client, tag, query)).body.items.map((item) => item.id);
 
     expect(await idsFor("&status=REMOVED")).toEqual([removedBag.id]);
-    expect(await idsFor("&type=FOUND")).toEqual([foundKeys.id]);
-    expect(await idsFor("&type=LOST&status=OPEN")).toEqual([lostKeys.id]);
-    expect(await idsFor("&type=LOST")).toEqual([lostKeys.id, removedBag.id]);
+    expect(await idsFor("&type=FOUND")).toEqual([foundFlask.id]);
+    expect(await idsFor("&type=LOST&status=OPEN")).toEqual([lostFlask.id]);
+    expect(await idsFor("&type=LOST")).toEqual([lostFlask.id, removedBag.id]);
     expect((await listItems(client, tag, "&type=LOST")).body.total).toBe(2);
     expect(await idsFor("&status=CLAIMED")).toEqual([]);
-    const byText = await client.get<AdminItemsBody>(`/api/admin/items?q=${encodeURIComponent(`KEYS ${tag}`)}`);
-    expect(byText.body.items.map((item) => item.id)).toEqual([lostKeys.id, foundKeys.id]);
+    const byText = await client.get<AdminItemsBody>(`/api/admin/items?q=${encodeURIComponent(`FLASK ${tag}`)}`);
+    expect(byText.body.items.map((item) => item.id)).toEqual([lostFlask.id, foundFlask.id]);
   });
 
   it("pages with a cursor without repeating or skipping posts and reports the same total on every page", async () => {

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { readBodyText } from "./body";
 import { badRequest, type FieldErrors } from "./errors";
 
 function validate<Schema extends z.ZodType>(schema: Schema, value: unknown): z.output<Schema> {
@@ -11,8 +12,16 @@ function validate<Schema extends z.ZodType>(schema: Schema, value: unknown): z.o
   return result.data;
 }
 
+function parseJson(text: string) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return undefined;
+  }
+}
+
 export async function parseBody<Schema extends z.ZodType>(request: Request, schema: Schema) {
-  return validate(schema, await request.json().catch(() => undefined));
+  return validate(schema, parseJson(await readBodyText(request)));
 }
 
 export function parseQuery<Schema extends z.ZodType>(request: Request, schema: Schema) {

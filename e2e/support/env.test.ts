@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { e2eDatabaseUrl } from "./env.mjs";
+import { STORAGE_VARIABLES, e2eDatabaseUrl, storageEnv } from "./env.mjs";
 
 const DEV = "postgresql://owner:secret@dev.example.com/app?sslmode=require";
 
@@ -61,5 +61,31 @@ describe("e2eDatabaseUrl", () => {
     configure({});
 
     expect(() => e2eDatabaseUrl()).toThrow(/Set DATABASE_URL/);
+  });
+});
+
+describe("storageEnv", () => {
+  const stubStorage = (skip = "") => {
+    for (const name of STORAGE_VARIABLES) vi.stubEnv(name, `real-${name}`);
+    vi.stubEnv("E2E_SKIP_R2", skip);
+  };
+
+  it("adds nothing when real storage credentials are present", () => {
+    stubStorage();
+
+    expect(storageEnv()).toEqual({});
+  });
+
+  it.each(STORAGE_VARIABLES)("falls back to offline placeholders when %s is missing", (missing) => {
+    stubStorage();
+    vi.stubEnv(missing, "");
+
+    expect(storageEnv()).toMatchObject({ R2_ACCOUNT_ID: "e2e-account", R2_BUCKET: "e2e-bucket", E2E_R2_PLACEHOLDER: "1" });
+  });
+
+  it("uses placeholders even with real credentials when asked to skip the storage round trip", () => {
+    stubStorage("1");
+
+    expect(storageEnv()).toMatchObject({ R2_ACCESS_KEY_ID: "e2e-access-key", E2E_R2_PLACEHOLDER: "1" });
   });
 });

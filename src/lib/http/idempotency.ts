@@ -4,9 +4,10 @@ import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { sha256 } from "@/lib/hash";
 
+import { readBodyText } from "./body";
 import { ApiError, badRequest, conflict } from "./errors";
 
-const RETENTION_MS = 24 * 60 * 60 * 1000;
+export const RETENTION_MS = 24 * 60 * 60 * 1000;
 const IN_PROGRESS_TIMEOUT_MS = 60 * 1000;
 const MAX_ATTEMPTS = 3;
 
@@ -15,7 +16,7 @@ const keySchema = z
   .regex(/^[A-Za-z0-9_-]{8,128}$/, "Idempotency-Key must be 8 to 128 letters, digits, dashes or underscores.");
 
 async function fingerprint(request: Request) {
-  return sha256(`${request.method} ${new URL(request.url).pathname}\n${await request.clone().text()}`);
+  return sha256(`${request.method} ${new URL(request.url).pathname}\n${await readBodyText(request.clone())}`);
 }
 
 async function claim(userId: string, key: string, requestHash: string) {

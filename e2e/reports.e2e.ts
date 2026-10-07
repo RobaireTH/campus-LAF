@@ -202,7 +202,9 @@ describe("GET /api/admin/reports", () => {
     const newer = await db.report.create({
       data: { itemId: second.id, reporterId: reporterTwo.id, reason: "personal", createdAt: minutesAgo(5) },
     });
-    await db.report.create({ data: { itemId: done.id, reporterId: reporterOne.id, reason: "spam", status: "DISMISSED" } });
+    await db.report.create({
+      data: { itemId: done.id, reporterId: reporterOne.id, reason: "spam", status: "DISMISSED", decidedAt: new Date() },
+    });
     const ours = [older.id, newer.id];
 
     const result = await client.get<{ reports: QueueEntry[] }>("/api/admin/reports");

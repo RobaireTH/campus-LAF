@@ -1,6 +1,7 @@
 import { Prisma } from "@/generated/prisma/client";
 
 import { ApiError } from "./errors";
+import { logError } from "./log";
 import { assertSameOrigin } from "./origin";
 
 type Handler<Context> = (request: Request, context: Context) => Response | Promise<Response>;
@@ -30,13 +31,13 @@ function isDatabaseUnavailable(error: unknown) {
   return code !== undefined && UNAVAILABLE_CODES.has(code);
 }
 
-export function errorResponse(error: unknown) {
+export function errorResponse(error: unknown, context = "request") {
   if (error instanceof ApiError) {
     const body = error.fields ? { error: error.message, fields: error.fields } : { error: error.message };
     return Response.json(body, { status: error.status, headers: error.headers });
   }
   const unavailable = isDatabaseUnavailable(error);
-  console.error(unavailable ? "Database unavailable" : "Unhandled API error", error);
+  logError(`${unavailable ? "Database unavailable" : "Unhandled API error"} (${context})`, error);
   return unavailable
     ? Response.json({ error: "Database unavailable" }, { status: 503 })
     : Response.json({ error: "Something went wrong. Try again." }, { status: 500 });
@@ -49,7 +50,7 @@ export function route<Context = unknown>(handler: Handler<Context>): Handler<Con
       assertSameOrigin(request);
       response = await handler(request, context);
     } catch (error) {
-      response = errorResponse(error);
+      response = errorResponse(error, `${request.method} ${new URL(request.url).pathname}`);
     }
     if (!response.headers.has("Cache-Control")) response.headers.set("Cache-Control", "no-store");
     return response;

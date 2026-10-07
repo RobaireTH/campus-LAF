@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
 import { defineConfig } from "vitest/config";
 
-import { E2E_BASE_URL, e2eDatabaseUrl } from "./e2e/support/env.mjs";
+import { E2E_BASE_URL, e2eDatabaseUrl, storageEnv } from "./e2e/support/env.mjs";
 
 config({ quiet: true });
 
@@ -20,6 +20,6 @@ export default defineConfig({
     globalSetup: ["./e2e/support/global-setup.ts"],
     testTimeout: 60_000,
     hookTimeout: 240_000,
-    env: { DATABASE_URL: e2eDatabaseUrl(), E2E_BASE_URL },
+    env: { DATABASE_URL: e2eDatabaseUrl(), E2E_BASE_URL, ...storageEnv() },
   },
 });

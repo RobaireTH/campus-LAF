@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { buildObjectKey } from "@/lib/uploads/keys";
 
 import { ApiClient } from "./client";
+import { DEFAULT_CATEGORY, DEFAULT_LOCATION } from "./env.mjs";
 
 export const TEST_PASSWORD = "correct-horse-battery";
 
@@ -27,9 +28,10 @@ function testPasswordHash() {
 }
 
 export function defaultTaxonomy() {
-  taxonomy ??= Promise.all([db.category.findFirstOrThrow(), db.location.findFirstOrThrow()]).then(
-    ([category, location]) => ({ categoryId: category.id, locationId: location.id }),
-  );
+  taxonomy ??= Promise.all([
+    db.category.findUniqueOrThrow({ where: { name: DEFAULT_CATEGORY } }),
+    db.location.findUniqueOrThrow({ where: { name: DEFAULT_LOCATION } }),
+  ]).then(([category, location]) => ({ categoryId: category.id, locationId: location.id }));
   return taxonomy;
 }
 
@@ -98,7 +100,13 @@ export function createClaim(
   overrides: Partial<Prisma.ClaimUncheckedCreateInput> = {},
 ) {
   return db.claim.create({
-    data: { itemId, claimantId, proofText: "My initials are stitched inside the lining.", ...overrides },
+    data: {
+      itemId,
+      claimantId,
+      proofText: "My initials are stitched inside the lining.",
+      ...(overrides.status === "APPROVED" && { handoverCode: "ABC234" }),
+      ...overrides,
+    },
   });
 }
 

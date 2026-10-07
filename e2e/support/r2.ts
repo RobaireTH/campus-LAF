@@ -1,8 +1,8 @@
 import { DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
-const REQUIRED = ["R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET"];
+import { STORAGE_VARIABLES } from "./env.mjs";
 
-export const r2Configured = REQUIRED.every((name) => Boolean(process.env[name]));
+export const r2Configured = STORAGE_VARIABLES.every((name) => Boolean(process.env[name])) && !process.env.E2E_R2_PLACEHOLDER;
 
 export const TINY_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",

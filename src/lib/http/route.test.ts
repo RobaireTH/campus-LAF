@@ -46,8 +46,8 @@ describe("route", () => {
     expect(response.headers.get("retry-after")).toBe("42");
   });
 
-  it("hides unexpected errors behind a generic 500", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
+  it("hides unexpected errors behind a generic 500 and logs them without secrets", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
     const response = await route(() => {
       throw new Error("password=hunter2 leaked in a stack trace");
@@ -55,6 +55,8 @@ describe("route", () => {
 
     expect(response.status).toBe(500);
     expect(await response.json()).toEqual({ error: "Something went wrong. Try again." });
+    expect(logged.mock.calls[0][0]).toBe("Unhandled API error (POST /api/example)");
+    expect(JSON.stringify(logged.mock.calls)).not.toContain("hunter2");
   });
 
   it("reports an unreachable database as 503", async () => {

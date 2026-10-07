@@ -29,6 +29,8 @@ export const notFound = (message = "Not found.") => new ApiError(404, message);
 
 export const conflict = (message: string, fields?: FieldErrors) => new ApiError(409, message, { fields });
 
+export const payloadTooLarge = () => new ApiError(413, "The request body is too large.");
+
 export const tooManyRequests = (retryAfterSeconds: number) =>
   new ApiError(429, "Too many attempts. Try again later.", {
     headers: { "Retry-After": String(retryAfterSeconds) },

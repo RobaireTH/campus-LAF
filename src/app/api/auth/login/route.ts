@@ -3,12 +3,14 @@ import { loginSchema } from "@/lib/auth/schema";
 import { authenticate } from "@/lib/auth/service";
 import { createSession, withSessionCookie } from "@/lib/auth/session";
 import { sha256 } from "@/lib/hash";
+import { schedulePrune } from "@/lib/housekeeping";
 import { consumeRateLimit } from "@/lib/http/rate-limit";
 import { clientIp } from "@/lib/http/request";
 import { route } from "@/lib/http/route";
 import { parseBody } from "@/lib/http/validate";
 
 export const POST = route(async (request) => {
+  schedulePrune();
   await consumeRateLimit(`login:ip:${clientIp(request)}`, AUTH_LIMITS.login.perIp);
   const { email, password } = await parseBody(request, loginSchema);
   await consumeRateLimit(`login:email:${sha256(email)}`, AUTH_LIMITS.login.perEmail);
