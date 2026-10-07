@@ -198,19 +198,37 @@ export async function removeItem(user: CurrentUser, id: string) {
 }
 
 export async function listMyItems(user: CurrentUser) {
-  const rows = await db.item.findMany({
-    where: { posterId: user.id, status: { not: "REMOVED" } },
-    orderBy: { createdAt: "desc" },
-    take: 100,
-    select: {
-      id: true,
-      title: true,
-      type: true,
-      status: true,
-      eventDate: true,
-      createdAt: true,
-      _count: { select: { claims: true } },
-    },
-  });
-  return rows.map(({ _count, ...item }) => ({ ...item, claimCount: _count.claims }));
+  const [rows, pending, approved] = await Promise.all([
+    db.item.findMany({
+      where: { posterId: user.id, status: { not: "REMOVED" } },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        status: true,
+        eventDate: true,
+        createdAt: true,
+        _count: { select: { claims: true } },
+      },
+    }),
+    db.claim.groupBy({
+      by: ["itemId"],
+      where: { status: "PENDING", item: { posterId: user.id, status: { not: "REMOVED" } } },
+      _count: { _all: true },
+    }),
+    db.claim.findMany({
+      where: { status: "APPROVED", item: { posterId: user.id, status: "CLAIMED" } },
+      select: { id: true, itemId: true },
+    }),
+  ]);
+  const pendingByItem = new Map(pending.map((row) => [row.itemId, row._count._all]));
+  const handoverByItem = new Map(approved.map((row) => [row.itemId, row.id]));
+  return rows.map(({ _count, ...item }) => ({
+    ...item,
+    claimCount: _count.claims,
+    pendingClaimCount: pendingByItem.get(item.id) ?? 0,
+    handoverClaimId: handoverByItem.get(item.id) ?? null,
+  }));
 }

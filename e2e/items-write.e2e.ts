@@ -401,17 +401,35 @@ describe("GET /api/me/items", () => {
     await createClaim(newer.id, (await createUser()).id, { status: "PENDING" });
     await createClaim(newer.id, (await createUser()).id, { status: "REJECTED" });
 
-    const result = await client.get<{ items: { id: string; title: string; claimCount: number; status: string }[] }>(
-      "/api/me/items",
-    );
+    const result = await client.get<{
+      items: { id: string; title: string; claimCount: number; pendingClaimCount: number; status: string }[];
+    }>("/api/me/items");
 
     expect(result.status).toBe(200);
-    expect(result.body.items.map((item) => [item.id, item.claimCount])).toEqual([
-      [newer.id, 2],
-      [older.id, 0],
+    expect(result.body.items.map((item) => [item.id, item.claimCount, item.pendingClaimCount])).toEqual([
+      [newer.id, 2, 1],
+      [older.id, 0, 0],
     ]);
     expect(result.body.items[0]).toHaveProperty("eventDate");
     expect(result.body.items[0]).not.toHaveProperty("_count");
+  });
+
+  it("points an item whose claim was approved at its handover, and no other", async () => {
+    const { user, client } = await createSignedInUser();
+    const handedOver = await createItem(user.id, { title: "Handed over", status: "CLAIMED" });
+    const approved = await createClaim(handedOver.id, (await createUser()).id, { status: "APPROVED" });
+    const returned = await createItem(user.id, { title: "Returned", status: "RESOLVED" });
+    await createClaim(returned.id, (await createUser()).id, { status: "APPROVED" });
+    const open = await createItem(user.id, { title: "Still open" });
+    await createClaim(open.id, (await createUser()).id, { status: "CANCELLED" });
+
+    const result = await client.get<{ items: { id: string; handoverClaimId: string | null }[] }>("/api/me/items");
+
+    expect(Object.fromEntries(result.body.items.map((item) => [item.id, item.handoverClaimId]))).toEqual({
+      [handedOver.id]: approved.id,
+      [returned.id]: null,
+      [open.id]: null,
+    });
   });
 
   it("is empty for a user with no items", async () => {

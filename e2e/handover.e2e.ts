@@ -9,7 +9,7 @@ interface Handover {
   claimId: string;
   status: string;
   item: { id: string; title: string };
-  contact: { name: string; phone: string; whatsappUrl: string } | null;
+  contact: { name: string; role: "POSTER" | "CLAIMANT"; phone: string; whatsappUrl: string } | null;
   code: string | null;
   canComplete: boolean;
   canCancel: boolean;
@@ -47,7 +47,7 @@ describe("GET /api/claims/:id/handover", () => {
       claimId: claim.id,
       status: "APPROVED",
       item: { id: item.id, title: item.title },
-      contact: { name: "Claimant Person", phone: claimant.phone, whatsappUrl: whatsapp(claimant.phone) },
+      contact: { name: "Claimant Person", role: "CLAIMANT", phone: claimant.phone, whatsappUrl: whatsapp(claimant.phone) },
       code: (await db.claim.findUniqueOrThrow({ where: { id: claim.id } })).handoverCode,
       canComplete: true,
       canCancel: true,
@@ -62,6 +62,7 @@ describe("GET /api/claims/:id/handover", () => {
 
     expect(asClaimant.body.handover.contact).toEqual({
       name: "Poster Person",
+      role: "POSTER",
       phone: poster.phone,
       whatsappUrl: whatsapp(poster.phone),
     });

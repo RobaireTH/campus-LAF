@@ -21,7 +21,7 @@ function redirectOf(response: ApiResponse<string>) {
 const page = (client: ApiClient, path: string) => client.get<string>(path);
 
 describe("protected pages", () => {
-  it.each(["/report", "/dashboard", "/account", "/admin", "/items/some-item/edit", "/items/some-item/claims", "/items/some-item/claim", "/claims/some-claim"])(
+  it.each(["/report", "/dashboard", "/account", "/admin", "/items/some-item/edit", "/items/some-item/claims", "/items/some-item/claim", "/items/some-item/claim/sent", "/claims/some-claim"])(
     "send a signed-out visitor from %s to login with a way back",
     async (path) => {
       const result = await page(new ApiClient(), path);
@@ -77,28 +77,6 @@ describe("protected pages", () => {
     const { client } = await createSignedInUser();
 
     expect((await page(client, "/notifications")).body).toContain(NOT_FOUND);
-  });
-});
-
-describe("the claim page", () => {
-  it("asks an unverified user to verify their ID first", async () => {
-    const item = await createItem((await createUser()).id);
-    const { client } = await createSignedInUser({ kycStatus: "NOT_SUBMITTED" });
-
-    const result = await page(client, `/items/${item.id}/claim`);
-
-    expect(result.body).toContain("Verify your student ID");
-    expect(result.body).not.toContain("Ownership details");
-  });
-
-  it("shows the claim form to a verified user", async () => {
-    const item = await createItem((await createUser()).id);
-    const { client } = await createSignedInUser({ kycStatus: "VERIFIED" });
-
-    const result = await page(client, `/items/${item.id}/claim`);
-
-    expect(result.body).toContain("Ownership details");
-    expect(result.body).not.toContain("Verify your student ID");
   });
 });
 

@@ -138,7 +138,7 @@ describe("GET /api/me/claims", () => {
     expect(result.body.claims.map((claim) => claim.id)).toEqual([newerClaim.id, olderClaim.id]);
     expect(result.body.claims[0]).toMatchObject({
       status: "PENDING",
-      item: { id: newer.id, title: "Newer item", type: "LOST" },
+      item: { id: newer.id, title: "Newer item", type: "LOST", status: "OPEN" },
     });
     expect(Object.keys(result.body.claims[0]).sort()).toEqual(["createdAt", "id", "item", "status"]);
     expect(JSON.stringify(result.body)).not.toContain(poster.id);

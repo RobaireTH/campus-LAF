@@ -121,7 +121,7 @@ export async function listMyClaims(user: CurrentUser) {
     where: { claimantId: user.id },
     orderBy: { createdAt: "desc" },
     take: 100,
-    select: { id: true, status: true, createdAt: true, item: { select: { id: true, title: true, type: true } } },
+    select: { id: true, status: true, createdAt: true, item: { select: { id: true, title: true, type: true, status: true } } },
   });
   return rows.map((row) => ({ ...row, createdAt: row.createdAt.toISOString() }));
 }
@@ -145,7 +145,8 @@ async function loadHandoverClaim(user: CurrentUser, claimId: string) {
 
 function toHandover(claim: HandoverClaim, user: CurrentUser, status: HandoverStatus) {
   const active = status === "APPROVED";
-  const other = claim.item.posterId === user.id ? claim.claimant : claim.item.poster;
+  const viewerIsPoster = claim.item.posterId === user.id;
+  const other = viewerIsPoster ? claim.claimant : claim.item.poster;
   return {
     claimId: claim.id,
     status,
@@ -153,6 +154,7 @@ function toHandover(claim: HandoverClaim, user: CurrentUser, status: HandoverSta
     contact: active
       ? {
           name: other.name ?? "Anonymous",
+          role: viewerIsPoster ? ("CLAIMANT" as const) : ("POSTER" as const),
           phone: other.phone ?? undefined,
           whatsappUrl: other.phone ? whatsappUrl(other.phone) : undefined,
         }

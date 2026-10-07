@@ -3,6 +3,8 @@ import { z } from "zod";
 import { optional } from "@/lib/http/fields";
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "@/lib/items/schema";
 
+import { REJECTION_REASON_MAX } from "./reasons";
+
 export const REPORT_REASONS = {
   spam: "Spam or advertising",
   fake: "Looks fake or misleading",
@@ -25,7 +27,7 @@ export const reportRequestSchema = z
 export const verificationDecisionSchema = z
   .object({
     decision: z.enum(["APPROVE", "REJECT"], "Decision must be APPROVE or REJECT."),
-    reason: optional(z.string().trim().max(200, "Keep the reason under 200 characters.")),
+    reason: optional(z.string().trim().max(REJECTION_REASON_MAX, `Keep the reason under ${REJECTION_REASON_MAX} characters.`)),
   })
   .strict()
   .refine((value) => value.decision === "REJECT" || value.reason === undefined, "A reason only applies when rejecting.");

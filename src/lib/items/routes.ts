@@ -5,5 +5,5 @@ export const itemRoutes = {
   claim: (id: string) => `/items/${id}/claim`, // SOF-29 claim form
   claims: (id: string) => `/items/${id}/claims`, // SOF-30 claim review (owner)
   handover: (claimId: string) => `/claims/${claimId}`, // SOF-31 contact & handover
-  myClaims: "/dashboard?tab=my-claims", // SOF-28
+  myClaims: "/dashboard?tab=claims", // SOF-28
 };
