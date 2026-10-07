@@ -25,13 +25,13 @@ export const mainNav: NavItem[] = [
   { href: "/", label: "Browse", icon: House, match: ["/items"] },
   { href: "/report", label: "Report", icon: Plus },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, match: ["/my-posts", "/claims"] },
-  { href: "/account", label: "Account", icon: UserRound, match: ["/verify"] },
+  { href: "/account", label: "Account", icon: UserRound, match: ["/verify-id"] },
 ];
 
 export const routes = {
   login: "/login",
   register: "/register",
-  verify: "/verify",
+  verify: "/verify-id",
   report: "/report",
   admin: "/admin",
 } as const;

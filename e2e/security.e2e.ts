@@ -106,9 +106,11 @@ describe("sign-in callback links", () => {
   it("on /verify-id ignore a callback that leaves the site", async () => {
     for (const callback of EVIL_CALLBACKS) {
       const result = await new ApiClient().get<string>(`/verify-id?callbackUrl=${encodeURIComponent(callback)}`);
+      const location = result.headers.get("location") ?? "";
 
-      expect(result.status).toBe(200);
-      expect(result.body).toMatch(/callbackUrl\\":\\"\/\\"/);
+      expect(location).toContain(encodeURIComponent("/verify-id?callbackUrl=%2F"));
+      expect(location).not.toContain("evil");
+      expect(location).not.toContain("javascript");
     }
   });
 

@@ -99,7 +99,7 @@ export function RegisterForm({ callbackUrl = "/" }: { callbackUrl?: string }) {
   );
 }
 
-export function VerifyIdForm({ callbackUrl = "/" }: { callbackUrl?: string }) {
+export function VerifyIdForm({ callbackUrl = "/", rejectionReason }: { callbackUrl?: string; rejectionReason?: string | null }) {
   const router = useRouter();
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
@@ -123,12 +123,12 @@ export function VerifyIdForm({ callbackUrl = "/" }: { callbackUrl?: string }) {
     setLoading(false);
     if (response.status === 401) return setAuthRequired(true);
     if (!response.ok) return setError((await response.json().catch(() => null))?.error ?? "Could not submit your ID.");
-    router.push(callbackUrl);
     router.refresh();
   }
 
   return (
     <><form onSubmit={submit} className="space-y-5">
+      {rejectionReason && <p role="alert" className="rounded-md bg-danger-soft p-4 text-small text-danger-soft-foreground"><span className="font-semibold">Your last photo was not accepted.</span> {rejectionReason}</p>}
       <div className="flex gap-3 rounded-md bg-success-soft p-4 text-small text-success-soft-foreground"><ShieldCheck className="mt-0.5 size-5 shrink-0" aria-hidden /><p>Your ID is used only to verify campus membership and is never shown publicly.</p></div>
       <Field id="school-id" label="School ID" hint="Make sure your name, photo, and school are readable." required><PhotoPicker id="school-id" value={files} onChange={setFiles} maxFiles={1} maxSizeMB={5} capture="environment" /></Field>
       {error && <p role="alert" className="rounded-md bg-danger-soft p-3 text-small text-danger-soft-foreground">{error}</p>}

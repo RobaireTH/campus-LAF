@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Bell, Plus, ShieldCheck } from "lucide-react";
+import { Plus, ShieldCheck } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -67,13 +67,13 @@ export function TopNav({ user }: { user: ShellUser | null }) {
             </Link>
           </Button>
           {user ? (
-            <><Button asChild variant="ghost" size="icon-sm"><Link href="/notifications" aria-label="Notifications"><Bell /></Link></Button><Link
+            <Link
               href="/account"
               aria-label={`Account: ${user.name}`}
               className="rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40"
             >
               <UserAvatar name={user.name} src={user.image} size="sm" verified={user.verified} />
-            </Link></>
+            </Link>
           ) : (
             <>
               <Button asChild variant="ghost" size="sm">

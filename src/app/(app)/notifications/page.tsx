@@ -1,6 +1,5 @@
-import { PageContainer } from "@/components/layout/page-container";
-import { NotificationList } from "@/components/notifications/notification-list";
+import { notFound } from "next/navigation";
 
 export default function NotificationsPage() {
-  return <PageContainer title="Notifications" description="Updates about your posts, claims, and handovers."><NotificationList /></PageContainer>;
+  notFound();
 }

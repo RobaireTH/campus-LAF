@@ -1,6 +1,7 @@
 import { PageContainer } from "@/components/layout/page-container";
-import { parseSearchParams, searchItems } from "@/lib/items/api";
-import { categories, locations } from "@/lib/items/options";
+import { browseItems } from "@/lib/items/queries";
+import { parseSearchParams } from "@/lib/items/search-params";
+import { listTaxonomy } from "@/lib/items/taxonomy";
 import {
   ActiveFilters,
   BrowsePending,
@@ -17,10 +18,8 @@ export const metadata = { title: "Browse lost & found · Campus Lost & Found" };
 /** Browse / Search (SOF-37). Filters come from the URL query. */
 export default async function BrowsePage({ searchParams }: PageProps<"/">) {
   const params = parseSearchParams(await searchParams);
-  const result = await searchItems(params);
+  const [result, options] = await Promise.all([browseItems(params), listTaxonomy()]);
   const hasFilters = Boolean(params.q || params.type || params.category || params.location || params.from);
-  // TODO(SOF-9/SOF-19): categories + locations from the API instead of mock data.
-  const options = { categories, locations };
 
   return (
     <PageContainer

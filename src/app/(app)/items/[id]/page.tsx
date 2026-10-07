@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge, ItemStatusBadge, ItemTypeBadge } from "@/components/ui/badge";
 import { PageContainer } from "@/components/layout/page-container";
 import { friendlyDate, timeAgo } from "@/lib/format";
-import { getItem } from "@/lib/items/api";
+import { getItem } from "@/lib/items/queries";
 import { itemRoutes } from "@/lib/items/routes";
 import type { ItemDetail } from "@/lib/items/types";
 import { getShellUser } from "@/lib/session";

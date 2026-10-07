@@ -1,49 +1,87 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { SignInDialog } from "@/components/auth/sign-in-dialog";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { ApiRequestError, sendJson } from "@/lib/api-client";
+import type { Option } from "@/lib/items/types";
 
-type EditableItem = { title: string; description: string; locationNote?: string | null; date: string };
+export interface EditableItem {
+  id: string;
+  title: string;
+  description: string;
+  locationNote: string | null;
+  date: string;
+  categoryId: string;
+  locationId: string;
+}
 
-export function EditItemForm({ id }: { id: string }) {
+interface Props {
+  item: EditableItem;
+  categories: Option[];
+  locations: Option[];
+}
+
+export function EditItemForm({ item, categories, locations }: Props) {
   const router = useRouter();
-  const [item, setItem] = useState<EditableItem>();
-  const [loading, setLoading] = useState(true);
+  const [categoryId, setCategoryId] = useState(item.categoryId);
+  const [locationId, setLocationId] = useState(item.locationId);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [authRequired, setAuthRequired] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    fetch(`/api/items/${id}`).then(async (response) => ({ response, result: await response.json().catch(() => null) })).then(({ response, result }) => {
-      if (!active) return;
-      if (!response.ok) setError(result?.error ?? "Could not load this item.");
-      else setItem(result.item);
-    }).finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [id]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
     setError(undefined);
+    setFieldErrors({});
     const form = new FormData(event.currentTarget);
-    const response = await fetch(`/api/items/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: form.get("title"), description: form.get("description"), locationNote: form.get("locationNote") || null, dateLostOrFound: form.get("dateLostOrFound") }) });
-    const result = await response.json().catch(() => null);
-    setSaving(false);
-    if (response.status === 401) return setAuthRequired(true);
-    if (!response.ok) return setError(result?.error ?? "Could not save your changes.");
-    router.push(`/items/${id}`);
-    router.refresh();
+    try {
+      await sendJson(`/api/items/${item.id}`, "PATCH", {
+        title: form.get("title"),
+        description: form.get("description"),
+        categoryId,
+        locationId,
+        locationNote: form.get("locationNote") || null,
+        dateLostOrFound: form.get("dateLostOrFound"),
+      });
+      router.push(`/items/${item.id}`);
+      router.refresh();
+    } catch (cause) {
+      if (cause instanceof ApiRequestError && cause.status === 401) setAuthRequired(true);
+      else {
+        if (cause instanceof ApiRequestError) setFieldErrors(cause.fields);
+        setError(cause instanceof Error ? cause.message : "Could not save your changes.");
+      }
+    } finally {
+      setSaving(false);
+    }
   }
 
-  if (loading) return <div className="h-80 animate-pulse rounded-xl bg-muted" />;
-  if (!item) return <p role="alert" className="rounded-lg bg-danger-soft p-4 text-danger-soft-foreground">{error ?? "Item unavailable"}</p>;
-  return <><form onSubmit={submit} className="space-y-6"><Field id="title" label="Item name" required><Input id="title" name="title" defaultValue={item.title} minLength={3} maxLength={120} required /></Field><Field id="description" label="Description" required><Textarea id="description" name="description" defaultValue={item.description} minLength={10} maxLength={2000} rows={6} required /></Field><Field id="locationNote" label="Where exactly?"><Input id="locationNote" name="locationNote" defaultValue={item.locationNote ?? ""} maxLength={200} /></Field><Field id="dateLostOrFound" label="Date" required><Input id="dateLostOrFound" name="dateLostOrFound" type="date" defaultValue={new Date(item.date).toISOString().slice(0, 10)} max={new Date().toISOString().slice(0, 10)} required /></Field>{error && <p role="alert" className="rounded-lg bg-danger-soft p-4 text-small text-danger-soft-foreground">{error}</p>}<div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => router.back()}>Cancel</Button><Button type="submit" loading={saving}>Save changes</Button></div></form><SignInDialog open={authRequired} onOpenChange={setAuthRequired} callbackUrl={`/items/${id}/edit`} title="Sign in to edit this post" /></>;
+  const fieldError = (name: string) => fieldErrors[name]?.[0];
+
+  return (
+    <>
+      <form onSubmit={submit} className="space-y-6">
+        <Field id="title" label="Item name" error={fieldError("title")} required><Input id="title" name="title" defaultValue={item.title} minLength={3} maxLength={120} required /></Field>
+        <Field id="description" label="Description" error={fieldError("description")} required><Textarea id="description" name="description" defaultValue={item.description} minLength={10} maxLength={2000} rows={6} required /></Field>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field id="category" label="Category" error={fieldError("categoryId")} required><Select value={categoryId} onValueChange={setCategoryId}><SelectTrigger id="category"><SelectValue placeholder="Choose category" /></SelectTrigger><SelectContent>{categories.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></Field>
+          <Field id="location" label="Campus location" error={fieldError("locationId")} required><Select value={locationId} onValueChange={setLocationId}><SelectTrigger id="location"><SelectValue placeholder="Choose location" /></SelectTrigger><SelectContent>{locations.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></Field>
+        </div>
+        <Field id="locationNote" label="Where exactly?" error={fieldError("locationNote")}><Input id="locationNote" name="locationNote" defaultValue={item.locationNote ?? ""} maxLength={200} /></Field>
+        <Field id="dateLostOrFound" label="Date" error={fieldError("dateLostOrFound")} required><Input id="dateLostOrFound" name="dateLostOrFound" type="date" defaultValue={new Date(item.date).toISOString().slice(0, 10)} max={new Date().toISOString().slice(0, 10)} required /></Field>
+        {error && <p role="alert" className="rounded-lg bg-danger-soft p-4 text-small text-danger-soft-foreground">{error}</p>}
+        <div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => router.back()}>Cancel</Button><Button type="submit" loading={saving}>Save changes</Button></div>
+      </form>
+      <SignInDialog open={authRequired} onOpenChange={setAuthRequired} callbackUrl={`/items/${item.id}/edit`} title="Sign in to edit this post" />
+    </>
+  );
 }

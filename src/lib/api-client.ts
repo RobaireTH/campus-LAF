@@ -13,10 +13,11 @@ export async function sendJson<T = unknown>(
   path: string,
   method: "GET" | "POST" | "PATCH" | "DELETE",
   body?: unknown,
+  headers: Record<string, string> = {},
 ): Promise<T> {
   const response = await fetch(path, {
     method,
-    headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+    headers: body === undefined ? headers : { "Content-Type": "application/json", ...headers },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const payload = await response.json().catch(() => null);
