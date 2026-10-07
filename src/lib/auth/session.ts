@@ -15,6 +15,8 @@ export const sessionUserSelect = {
   image: true,
   role: true,
   kycStatus: true,
+  kycSubmittedAt: true,
+  kycRejectionReason: true,
 } satisfies Prisma.UserSelect;
 
 export type SessionUser = Prisma.UserGetPayload<{ select: typeof sessionUserSelect }>;
@@ -27,8 +29,8 @@ interface SessionTicket {
 export const sha256 = (value: string) => createHash("sha256").update(value).digest("hex");
 
 export function toSessionUser(user: SessionUser): SessionUser {
-  const { id, name, email, phone, image, role, kycStatus } = user;
-  return { id, name, email, phone, image, role, kycStatus };
+  const { id, name, email, phone, image, role, kycStatus, kycSubmittedAt, kycRejectionReason } = user;
+  return { id, name, email, phone, image, role, kycStatus, kycSubmittedAt, kycRejectionReason };
 }
 
 export async function createSession(userId: string): Promise<SessionTicket> {

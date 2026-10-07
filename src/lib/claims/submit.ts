@@ -3,8 +3,7 @@ import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import type { CurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { mediaPurpose } from "@/lib/uploads/media";
-import { UPLOAD_TYPES } from "@/lib/uploads/schema";
+import { mediaKind, ownsUpload } from "@/lib/uploads/keys";
 
 import type { ClaimRequest, ClaimResponse } from "./schema";
 
@@ -14,22 +13,8 @@ export type SubmitClaimResult =
 
 const fail = (status: 400 | 403 | 404 | 409, error: string): SubmitClaimResult => ({ ok: false, status, error });
 
-function mediaType(key: string) {
-  const ext = key.slice(key.lastIndexOf(".") + 1);
-  const rule = Object.values(UPLOAD_TYPES).find((type) => type.ext === ext);
-  return rule?.kind;
-}
-
-function ownsClaimUpload(key: string, userId: string) {
-  try {
-    return mediaPurpose(key) === "claim" && key.split("/")[1] === userId;
-  } catch {
-    return false;
-  }
-}
-
 export async function submitClaim(itemId: string, user: CurrentUser, input: ClaimRequest): Promise<SubmitClaimResult> {
-  if (!input.mediaKeys.every((key) => ownsClaimUpload(key, user.id))) {
+  if (!input.mediaKeys.every((key) => ownsUpload(key, user.id, "claim"))) {
     return fail(400, "One or more attached files are not valid claim uploads.");
   }
 
@@ -51,7 +36,7 @@ export async function submitClaim(itemId: string, user: CurrentUser, input: Clai
         claimantId: user.id,
         proofText: input.description,
         media: {
-          create: input.mediaKeys.map((key, position) => ({ key, position, type: mediaType(key)! })),
+          create: input.mediaKeys.map((key, position) => ({ key, position, type: mediaKind(key)! })),
         },
       },
       select: { id: true, createdAt: true },

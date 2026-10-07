@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ItemStatus, ItemType, Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { route } from "@/lib/http/route";
+import { mediaKind, ownsUpload } from "@/lib/uploads/keys";
 
 const createItemSchema = z.object({
   type: z.enum(["LOST", "FOUND"]),
@@ -190,6 +191,13 @@ export const POST = route(async (request) => {
 
   const { type, title, description, categoryId, locationId, locationNote, dateLostOrFound, mediaKeys } = parsed.data;
 
+  if (!mediaKeys.every((key) => ownsUpload(key, user.id, "item"))) {
+    return NextResponse.json(
+      { error: "One or more attached files are not valid item uploads.", fields: { mediaKeys: ["Upload your photos again."] } },
+      { status: 400 },
+    );
+  }
+
   try {
     const item = await db.item.create({
       data: {
@@ -205,7 +213,7 @@ export const POST = route(async (request) => {
         media: {
           create: mediaKeys.map((key, index) => ({
             key,
-            type: "IMAGE" as const,
+            type: mediaKind(key)!,
             position: index,
           })),
         },

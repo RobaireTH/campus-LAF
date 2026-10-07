@@ -58,6 +58,8 @@ model User {
     role          Role       @default(STUDENT)
     kycStatus     KycStatus  @default(NOT_SUBMITTED)
     kycIdImageKey String?
+    kycSubmittedAt     DateTime?
+    kycRejectionReason String?
 
     items Item[]
     claims Claim[]

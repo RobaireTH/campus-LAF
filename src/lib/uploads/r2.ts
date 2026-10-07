@@ -1,11 +1,10 @@
 import "server-only";
 
-import { randomUUID } from "node:crypto";
-
 import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-import { UPLOAD_TYPES, type UploadRequest, type UploadResponse } from "./schema";
+import { buildObjectKey } from "./keys";
+import type { UploadRequest, UploadResponse } from "./schema";
 
 const UPLOAD_URL_TTL_SECONDS = 300;
 
@@ -28,10 +27,6 @@ function r2() {
     },
   });
   return client;
-}
-
-export function buildObjectKey(purpose: UploadRequest["purpose"], userId: string, contentType: UploadRequest["contentType"]) {
-  return `${purpose}/${userId}/${randomUUID()}.${UPLOAD_TYPES[contentType].ext}`;
 }
 
 export async function createUploadUrl(request: UploadRequest, userId: string): Promise<UploadResponse> {

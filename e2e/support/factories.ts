@@ -1,6 +1,6 @@
 import { randomInt, randomUUID } from "node:crypto";
 
-import type { KycStatus, Role } from "@/generated/prisma/client";
+import type { KycStatus, Prisma, Role } from "@/generated/prisma/client";
 import { hashPassword } from "@/lib/auth/password";
 import { SESSION_COOKIE, createSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
@@ -18,10 +18,18 @@ interface UserOverrides {
 }
 
 let passwordHash: Promise<string> | undefined;
+let taxonomy: Promise<{ categoryId: string; locationId: string }> | undefined;
 
 function testPasswordHash() {
   passwordHash ??= hashPassword(TEST_PASSWORD);
   return passwordHash;
+}
+
+export function defaultTaxonomy() {
+  taxonomy ??= Promise.all([db.category.findFirstOrThrow(), db.location.findFirstOrThrow()]).then(
+    ([category, location]) => ({ categoryId: category.id, locationId: location.id }),
+  );
+  return taxonomy;
 }
 
 export const uniqueEmail = (tag = "user") => `${tag}-${randomUUID().slice(0, 8)}@e2e.test`;
@@ -43,8 +51,8 @@ export async function createUser(overrides: UserOverrides = {}) {
   });
 }
 
-export async function signInAs(user: { id: string }) {
-  const client = new ApiClient();
+export async function signInAs(user: { id: string }, options: { ip?: string } = {}) {
+  const client = new ApiClient(options);
   const session = await createSession(user.id);
   client.cookies.set(SESSION_COOKIE, session.token);
   return client;
@@ -53,4 +61,36 @@ export async function signInAs(user: { id: string }) {
 export async function createSignedInUser(overrides: UserOverrides = {}) {
   const user = await createUser(overrides);
   return { user, client: await signInAs(user) };
+}
+
+export async function createItem(
+  posterId: string,
+  overrides: Partial<Prisma.ItemUncheckedCreateInput> = {},
+) {
+  const { categoryId, locationId } = await defaultTaxonomy();
+  return db.item.create({
+    data: {
+      type: "LOST",
+      title: "Seeded umbrella",
+      description: "Created directly in the database.",
+      eventDate: new Date(),
+      categoryId,
+      locationId,
+      posterId,
+      ...overrides,
+    },
+  });
+}
+
+export async function newItemPayload(overrides: Record<string, unknown> = {}) {
+  const { categoryId, locationId } = await defaultTaxonomy();
+  return {
+    type: "FOUND",
+    title: "Grey flask",
+    description: "Found on the library steps.",
+    categoryId,
+    locationId,
+    dateLostOrFound: new Date().toISOString(),
+    ...overrides,
+  };
 }

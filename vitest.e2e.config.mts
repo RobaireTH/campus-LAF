@@ -11,6 +11,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+      "server-only": fileURLToPath(new URL("./e2e/support/server-only.ts", import.meta.url)),
     },
   },
   test: {

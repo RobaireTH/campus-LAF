@@ -23,6 +23,8 @@ const claimant: CurrentUser = {
   image: null,
   role: "STUDENT",
   kycStatus: "VERIFIED",
+  kycSubmittedAt: null,
+  kycRejectionReason: null,
 };
 const photoKey = "claim/user_claimant/0b9c1e2a-5f4d-4c3b-9a8e-7d6f5e4c3b2a.jpg";
 const videoKey = "claim/user_claimant/1c0d2f3b-6a5e-4d4c-8b9f-8e7a6f5d4c3b.mp4";
