@@ -165,7 +165,7 @@ Not in your list, but required by your rules (local server, end-to-end tests for
 
 ## Section 6. Notifications (deferred, D16)
 
-Deferred until after the MVP, so nothing is built in this section. The bell and the Notifications page are hidden in the UI sections (9.5). The plan that was approved, for when it is picked up:
+Deferred until after the MVP, so nothing is built in this section. The bell and the Notifications page were hidden in 8.5. The plan that was approved, for when it is picked up:
 
 - 6.1 In-app notifications created in the same transaction as the event and only when the state really changed: claim received, claim approved or rejected, handover completed or cancelled, KYC decision, item removed by an admin, plus the claimants whose claim closes because another was approved or the post was removed (D17). The message text is stored when the event happens (D18)
 - 6.2 `GET /api/me/notifications` (newest first, 30 per page, `unreadCount`) and `PATCH /api/me/notifications` with `{ all: true }` or `{ ids }`, safe to repeat; messages never carry contact details or claim proof
@@ -180,11 +180,12 @@ Deferred until after the MVP, so nothing is built in this section. The bell and 
 
 ## Section 8. UI integration: auth, KYC, items
 
-- [ ] 8.1 Login, registration and ID verification screens on the real auth and KYC APIs, with callback URLs, validation messages and error states
-- [ ] 8.2 Report item flow on real categories, locations and uploads
-- [ ] 8.3 Edit item flow on the real API
-- [ ] 8.4 Browse and item detail on real data; mock data, mock images and the development fallback removed
-- [ ] 8.5 Navigation and page guards: signed out goes to login with a way back, unverified sees the verify prompt, admin pages are admin only
+- [x] 8.1 ID verification on the real KYC API: the screen shows the user's real state (not submitted, under review, verified, or rejected with the admin's reason) and signed-in users skip login and register. Login and register were already on the real auth API
+- [x] 8.2 Report item flow on real categories and locations: ids from the database, per-field errors from the API, one `Idempotency-Key` per form so a double click cannot post twice, and photos that were already uploaded are reused when a submit is retried
+- [x] 8.3 Edit item: loaded on the server for the owner only while the post is open, prefilled, with category and location as well as text and date
+- [x] 8.4 Browse and item detail read the database through the item services, with taxonomy ids in the URLs; the mock catalog, its images, the slug list and the development fallback are deleted
+- [x] 8.5 Guards: the server-side `ProtectedPage` on report, edit, dashboard, account, verify-id, admin, claim, claim review and handover (signed out goes to login with a way back, unverified sees the verify prompt, non-admins get a 404); the prompt's link now points at `/verify-id`; the bell and the Notifications page are hidden (D16, moved here from 9.5)
+- [ ] 8.6 Real photo uploads checked in a browser for the ID and report screens. Blocked on the R2 CORS policy (see 2.6)
 
 ## Section 9. UI integration: dashboard, claims, handover, notifications, admin
 
@@ -192,7 +193,7 @@ Deferred until after the MVP, so nothing is built in this section. The bell and 
 - [ ] 9.2 Claim submission connected to uploads and the API
 - [ ] 9.3 Claim review (approve, reject) on the real API
 - [ ] 9.4 Handover on the real API: contact details, code, complete, cancel
-- [ ] 9.5 Notifications are deferred (D16): hide the bell and the Notifications page until the feature is built
+- [x] 9.5 Notifications are deferred (D16): the bell and the Notifications page were hidden in 8.5
 - [ ] 9.6 Admin moderation and verification screens on the real API
 
 ## Section 10. States, responsive, accessibility
@@ -244,6 +245,9 @@ Password reset, email verification, social login, in-app notifications until aft
 | D19 | Hosting target | Vercel with Neon and R2. Configuration and checklist only: nothing is deployed until you say go |
 | D20 | Automated checks | GitHub Actions on every pull request: lint, types, unit tests and the full end-to-end suite against a throwaway Postgres container |
 | D21 | Browser security headers | Standard headers plus a fixed CSP that allows this site and the R2 host. Scripts and styles keep `'unsafe-inline'`; a nonce-based CSP stays an option for later |
+| D22 | Page guards | The server-side `ProtectedPage` on each protected page (a proxy file and pop-ups only were the alternatives) |
+| D23 | Photo uploads in the browser | Straight to R2, so the bucket needs the CORS policy; you add it, and uploads are checked in the browser once it is in (sending files through the API was the alternative) |
+| D24 | What the edit form changes | Text, date, category and location; photos stay fixed |
 
 Defaults accepted with the Sections 0 and 1 plan: Node `scrypt` password hashing; cookie `findr_session`, HttpOnly, SameSite=Lax, Secure over HTTPS, 14 days; Origin check on state-changing requests; phone numbers normalised to +234 format; rate-limit counters in the database; API end-to-end tests over real HTTP; server pages read through shared service functions; in-app notifications only.
 
@@ -256,5 +260,7 @@ Defaults accepted with the Section 3 plan: editing changes text, date, category 
 Defaults accepted with the Section 5 plan: the report reasons are a fixed list (spam, fake or misleading, private details, offensive, other) with optional details of up to 500 characters; one report per person per post, and a second report from the same person returns the first; you cannot report your own post and removed posts cannot be reported; 20 reports per user per day; reporters stay anonymous to posters; admin queues show the 100 oldest entries; an admin cannot review their own ID; removing a post closes its pending and approved claims and marks every open report on it as actioned, so a removed post never has a live claim; admins still get no access to claims or contact.
 
 Defaults accepted with the Section 7 plan: housekeeping prunes expired sessions, spent rate-limit rows and idempotency keys older than a day at most once an hour per server instance, after a login or registration request (the alternatives were a scheduled job or nothing); no rate limit on public search until the Browse page reads through services in section 8, because its server-side fetches would share one address; `DIRECT_URL` is read first by the Prisma CLI and falls back to `DATABASE_URL`; the end-to-end suite uses placeholder storage credentials unless real ones are present, and `E2E_SKIP_R2=1` forces them; the production dependency audit must stay at 0.
+
+Defaults accepted with the Section 8 plan: pages read through the services rather than their own API; categories and locations are listed alphabetically with Other last; signed-in users who open login or register go straight to their callback; an edit page is a 404 for anyone but the owner, admins included, and explains why when the post is no longer open; the claim, claim review and handover pages are guarded by a layout because they stay client pages until section 9; the bell is gone and `/notifications` is a 404. A caveat of the app shell's loading skeleton: pages inside it start streaming before a guard runs, so a guard redirect there reaches the browser as a client redirect and a not-found as a 200 page marked `noindex`, not as a 307 or 404 status. The API routes still answer 401, 403 and 404 properly.
 
 Calls made while building Sections 0 and 1, open to change: the `pg` driver adapter everywhere; per-IP rate limits kept generous because campus networks share IPs (see `src/lib/auth/limits.ts`); migrations generated by diffing schema files and applied with `migrate deploy`.
