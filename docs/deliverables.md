@@ -46,7 +46,7 @@ Reference docs: the rest of this folder ([README](README.md)) holds the product 
 | 2 | KYC and protected actions | 1 | 2 | SOF-42, 14, 15 |
 | 3 | Items | 1 | 6 | SOF-9, 10, 11, 12, 13, 15 |
 | 4 | Claims and handover | 1 | 6 | SOF-16, 17, 18 |
-| 5 | Admin moderation and reports | 1 | 5 | SOF-43 (reports are not in the Linear MVP) |
+| 5 | Admin moderation and reports | 1 | 7 | SOF-43 (user reports are not in the Linear MVP) |
 | 6 | Notifications | 1 | 2 | none (post-MVP in Linear, in your list) |
 | 7 | Database, security, deployment, backend test suite | 1 | 1 | SOF-7, 8, 45, 46 |
 | 8 | UI integration: auth, KYC, items | 2 | 0 | SOF-19, 21 to 25, 37, 38 |
@@ -56,7 +56,7 @@ Reference docs: the rest of this folder ([README](README.md)) holds the product 
 
 ## Target API surface
 
-26 endpoints: 19 new, 7 existing that need hardening. Access codes: Public, Session (signed in), Verified (signed in with approved ID), Owner (poster of the item), Party (poster or approved claimant), Admin.
+28 endpoints: 21 new, 7 existing that need hardening. Access codes: Public, Session (signed in), Verified (signed in with approved ID), Owner (poster of the item), Party (poster or approved claimant), Admin.
 
 | Method and path | Access | Section | Today |
 | --- | --- | --- | --- |
@@ -83,6 +83,8 @@ Reference docs: the rest of this folder ([README](README.md)) holds the product 
 | PATCH /api/admin/verifications/:id | Admin | 5 | New |
 | GET /api/admin/reports | Admin | 5 | New |
 | PATCH /api/admin/reports/:id | Admin | 5 | New |
+| GET /api/admin/items | Admin | 5 | New |
+| PATCH /api/admin/items/:id/remove | Admin | 5 | New |
 | GET /api/me/notifications | Session | 6 | New |
 | PATCH /api/me/notifications | Session | 6 | New |
 | GET /api/health | Public | 7 | Exists, add database check |
@@ -96,7 +98,7 @@ Reference docs: the rest of this folder ([README](README.md)) holds the product 
 | `IdempotencyKey` table | 3 | Safe retries of item and claim creation |
 | `ClaimStatus` gains `CANCELLED` | 3 | Pending claims are closed when a post is removed; handover cancellation reuses it |
 | `Claim` gains a nullable `handoverCode` | 4 | The code shown on the handover screen |
-| New `Report` table | 5 | Users report posts, admins resolve them |
+| New `Report` table; `User` gains `kycReviewedAt` and `kycReviewedById` | 5 | Users report posts and admins resolve them; the ID review records who decided and when |
 | New `Notification` table | 6 | In-app notifications |
 | Rate-limit counters, drop unused `VerificationToken` | 7 | Abuse protection and cleanup after removing NextAuth |
 
@@ -119,7 +121,7 @@ Not in your list, but required by your rules (local server, end-to-end tests for
 - [x] 1.4 Session handling: secure cookie, expiry, one current-user lookup shared by API routes and server components
 - [x] 1.5 Replace `x-user-id`, `getCurrentUser`, `getShellUser` and `requireUser` with one session API, and remove NextAuth
 - [x] 1.6 Minimal UI swap so you can log in on the dev server (login form, register form, log out button)
-- [x] 1.7 Admin seed account on the new password hashing (new databases get an scrypt admin; the existing dev admin row still holds the old bcrypt hash and cannot log in until it is reset in section 5)
+- [x] 1.7 Admin seed account on the new password hashing (new databases get an scrypt admin; the existing dev admin row held the old bcrypt hash and was reset in section 5)
 - [x] 1.8 End-to-end tests: register, login, logout, me, expiry, rate limit, cross-origin rejection
 
 ## Section 2. KYC and protected actions
@@ -155,11 +157,13 @@ Not in your list, but required by your rules (local server, end-to-end tests for
 
 ## Section 5. Admin moderation and reports
 
-- [ ] 5.1 KYC queue for admins: pending submissions with a signed, short-lived image URL
-- [ ] 5.2 KYC approve and reject with a reason
-- [ ] 5.3 Users report a post with a reason
-- [ ] 5.4 Report queue for admins: dismiss, or remove the item
-- [ ] 5.5 Admin-only enforcement and end-to-end tests
+- [x] 5.1 KYC queue for admins: pending submissions, oldest first, with a signed 5-minute image URL
+- [x] 5.2 KYC approve and reject: optional note on a rejection with a default message, who decided and when recorded, an admin cannot review their own ID, repeats are safe
+- [x] 5.3 Users report a post with a reason from a fixed list and optional details: one report per person per post, not on your own post, 20 a day
+- [x] 5.4 Report queue for admins: dismiss, or remove the item (which closes its claims and every open report on it)
+- [x] 5.5 Admin item list with status, type and text filters and paging, and removal of any post
+- [x] 5.6 Admin-only enforcement and end-to-end tests, including racing decisions
+- [x] 5.7 Dev admin account reset onto the new password hashing: the new password is in `.env` as `SEED_ADMIN_PASSWORD`, and `RESET_ADMIN_PASSWORD=1 npx prisma db seed` applies it
 
 ## Section 6. Notifications
 
@@ -172,7 +176,7 @@ Not in your list, but required by your rules (local server, end-to-end tests for
 - [ ] 7.1 Constraints and migrations: clean chain that builds from an empty database, the two partial unique indexes kept, new constraints for the invariants the app relies on, idempotent seed
 - [ ] 7.2 Security pass: security headers, cookie flags, rate limits on login, register, uploads, claims and reports, request size limits, error responses that do not leak internals, log redaction, dependency audit
 - [ ] 7.3 Deployment configuration: build and migrate steps, documented environment variables in `.env.example` (no real values), health check with database check, pooled connection guidance; deploying only on your explicit go-ahead
-- [ ] 7.4 Backend test suite: unit tests for pure rules, end-to-end tests for all 26 endpoints, one command to run everything
+- [ ] 7.4 Backend test suite: unit tests for pure rules, end-to-end tests for all 28 endpoints, one command to run everything
 
 ## Section 8. UI integration: auth, KYC, items
 
@@ -208,7 +212,6 @@ Not in your list, but required by your rules (local server, end-to-end tests for
 | Item | Needed for | Who |
 | --- | --- | --- |
 | Add a CORS policy to the R2 bucket for the app's origins | Any browser upload: items, claims, ID photos | You, in the Cloudflare dashboard |
-| Reset the seeded admin's password | The admin screens (section 5) | Me, when we reach section 5 |
 | Update the Linear tickets for the routes decided here | Keeping the tickets true | You |
 
 ## Out of scope (not in your list)
@@ -231,6 +234,9 @@ Password reset, email verification, social login, email or push or real-time not
 | D10 | Handover route names | Keep the UI's paths: `GET` and `PATCH /api/claims/:id/handover` |
 | D11 | Handover code | Shared six-character code shown to both people to compare in person; either person can complete or cancel |
 | D12 | Contact shared after approval | Name, phone and a WhatsApp link only; email stays private |
+| D13 | Moderation scope | Both: users report posts and admins work a report queue, and admins can list and remove any post |
+| D14 | Rejecting an ID | The admin may add a note; without one the user sees a default message asking for a clearer photo |
+| D15 | Seeded admin account | Reset in place: a new random password in `.env` (`SEED_ADMIN_PASSWORD`), applied with `RESET_ADMIN_PASSWORD=1` on the seed |
 
 Defaults accepted with the Sections 0 and 1 plan: Node `scrypt` password hashing; cookie `findr_session`, HttpOnly, SameSite=Lax, Secure over HTTPS, 14 days; Origin check on state-changing requests; phone numbers normalised to +234 format; rate-limit counters in the database; API end-to-end tests over real HTTP; server pages read through shared service functions; in-app notifications only.
 
@@ -240,6 +246,8 @@ Defaults accepted with the Section 4 plan: approving needs an approved ID but re
 
 Defaults accepted with the Section 3 plan: editing changes text, date, category and location but not photos; `Idempotency-Key` is optional; item creation is limited to 20 per user per day; removed items stay visible to their owner and to admins.
 
+Defaults accepted with the Section 5 plan: the report reasons are a fixed list (spam, fake or misleading, private details, offensive, other) with optional details of up to 500 characters; one report per person per post, and a second report from the same person returns the first; you cannot report your own post and removed posts cannot be reported; 20 reports per user per day; reporters stay anonymous to posters; admin queues show the 100 oldest entries; an admin cannot review their own ID; removing a post closes its pending and approved claims and marks every open report on it as actioned, so a removed post never has a live claim; admins still get no access to claims or contact.
+
 Calls made while building Sections 0 and 1, open to change: the `pg` driver adapter everywhere; per-IP rate limits kept generous because campus networks share IPs (see `src/lib/auth/limits.ts`); migrations generated by diffing schema files and applied with `migrate deploy`.
 
 ## To settle in their section
@@ -248,6 +256,5 @@ The project docs flag these conflicts between the UI and Linear. Each gets alter
 
 | Section | Decision |
 | --- | --- |
-| 5 | Moderation scope: user reports with an admin report queue (current UI), or an admin item list with remove (Linear) |
 | 6 | Notifications are in your list but post-MVP in Linear: confirm they stay in scope |
 | 7 | Hosting target (Vercel or Cloudflare via OpenNext) and a staging environment |
