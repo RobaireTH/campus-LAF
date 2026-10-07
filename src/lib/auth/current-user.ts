@@ -20,10 +20,13 @@ export async function requireUser() {
   return user;
 }
 
-export async function requireVerified() {
-  const user = await requireUser();
+export function assertVerified(user: CurrentUser) {
   if (user.kycStatus !== "VERIFIED") throw forbidden("Verify your student ID to do this.");
   return user;
+}
+
+export async function requireVerified() {
+  return assertVerified(await requireUser());
 }
 
 export async function requireAdmin() {

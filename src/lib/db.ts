@@ -24,6 +24,8 @@ export function createDbClient(connectionUrl: string) {
   return new PrismaClient({ adapter });
 }
 
+export const TRANSACTION_OPTIONS = { maxWait: 10_000, timeout: 20_000 };
+
 const globalForDb = globalThis as unknown as { db?: PrismaClient };
 
 function client() {

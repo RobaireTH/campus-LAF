@@ -164,6 +164,7 @@ model Claim{
     status      ClaimStatus @default(PENDING)
     proofText   String
     decidedAt   DateTime?
+    handoverCode String?
     itemId      String
     item        Item @relation(fields: [itemId], references:[id])
 

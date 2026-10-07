@@ -15,7 +15,17 @@ export const claimRequestSchema = z.object({
     .default([]),
 });
 
+export const claimDecisionSchema = z
+  .object({ decision: z.enum(["APPROVE", "REJECT"], "Decision must be APPROVE or REJECT.") })
+  .strict();
+
+export const handoverActionSchema = z
+  .object({ action: z.enum(["COMPLETE", "CANCEL"], "Action must be COMPLETE or CANCEL.") })
+  .strict();
+
 export type ClaimRequest = z.infer<typeof claimRequestSchema>;
+export type ClaimDecision = z.output<typeof claimDecisionSchema>["decision"];
+export type HandoverAction = z.output<typeof handoverActionSchema>["action"];
 
 export interface ClaimResponse {
   id: string;

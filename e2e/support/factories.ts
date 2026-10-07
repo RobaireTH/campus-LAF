@@ -1,6 +1,6 @@
 import { randomInt, randomUUID } from "node:crypto";
 
-import type { KycStatus, Prisma, Role } from "@/generated/prisma/client";
+import type { ItemStatus, KycStatus, Prisma, Role } from "@/generated/prisma/client";
 import { hashPassword } from "@/lib/auth/password";
 import { SESSION_COOKIE, createSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
@@ -99,6 +99,26 @@ export function createClaim(
   return db.claim.create({
     data: { itemId, claimantId, proofText: "My initials are stitched inside the lining.", ...overrides },
   });
+}
+
+interface ScenarioOptions {
+  posterKyc?: KycStatus;
+  claimantKyc?: KycStatus;
+  itemStatus?: ItemStatus;
+}
+
+export async function createClaimScenario(options: ScenarioOptions = {}) {
+  const { user: poster, client: posterClient } = await createSignedInUser({
+    name: "Poster Person",
+    kycStatus: options.posterKyc ?? "VERIFIED",
+  });
+  const { user: claimant, client: claimantClient } = await createSignedInUser({
+    name: "Claimant Person",
+    kycStatus: options.claimantKyc ?? "VERIFIED",
+  });
+  const item = await createItem(poster.id, options.itemStatus ? { status: options.itemStatus } : {});
+  const claim = await createClaim(item.id, claimant.id);
+  return { poster, posterClient, claimant, claimantClient, item, claim };
 }
 
 export async function newItemPayload(overrides: Record<string, unknown> = {}) {

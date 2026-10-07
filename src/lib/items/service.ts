@@ -2,7 +2,7 @@ import "server-only";
 
 import type { Prisma } from "@/generated/prisma/client";
 import type { CurrentUser } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { TRANSACTION_OPTIONS, db } from "@/lib/db";
 import { badRequest, conflict, forbidden, notFound, type FieldErrors } from "@/lib/http/errors";
 import { mediaKind, ownsUpload } from "@/lib/uploads/keys";
 import { getMediaUrl } from "@/lib/uploads/media";
@@ -193,7 +193,7 @@ export async function removeItem(user: CurrentUser, id: string) {
       });
     }
     return moved;
-  });
+  }, TRANSACTION_OPTIONS);
   if (removed) return { id, status: "REMOVED" as const };
 
   const item = await db.item.findUnique({ where: { id }, select: { posterId: true, status: true } });
