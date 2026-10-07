@@ -1,7 +1,8 @@
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
+import { sha256 } from "@/lib/hash";
 import { isSecureRequest } from "@/lib/http/request";
 
 export const SESSION_COOKIE = "findr_session";
@@ -25,8 +26,6 @@ interface SessionTicket {
   token: string;
   expiresAt: Date;
 }
-
-export const sha256 = (value: string) => createHash("sha256").update(value).digest("hex");
 
 export function toSessionUser(user: SessionUser): SessionUser {
   const { id, name, email, phone, image, role, kycStatus, kycSubmittedAt, kycRejectionReason } = user;

@@ -6,8 +6,8 @@
  */
 
 export type ItemType = "LOST" | "FOUND";
-export type ItemStatus = "OPEN" | "CLAIMED" | "RESOLVED";
-export type ClaimStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type ItemStatus = "OPEN" | "CLAIMED" | "RESOLVED" | "REMOVED";
+export type ClaimStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
 
 /** One result on Browse — also the props shape for the item card (SOF-27). */
 export interface ItemCardData {

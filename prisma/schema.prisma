@@ -28,6 +28,7 @@ enum ClaimStatus{
     PENDING
     APPROVED
     REJECTED
+    CANCELLED
 }
 enum KycStatus {
     NOT_SUBMITTED
@@ -87,6 +88,18 @@ model RateLimit {
     key     String   @id
     count   Int
     resetAt DateTime
+}
+
+model IdempotencyKey {
+    userId      String
+    key         String
+    requestHash String
+    statusCode  Int?
+    response    Json?
+    createdAt   DateTime @default(now())
+
+    @@id([userId, key])
+    @@index([createdAt])
 }
 
 model Category {

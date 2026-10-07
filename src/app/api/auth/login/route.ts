@@ -1,7 +1,8 @@
 import { AUTH_LIMITS } from "@/lib/auth/limits";
 import { loginSchema } from "@/lib/auth/schema";
 import { authenticate } from "@/lib/auth/service";
-import { createSession, sha256, withSessionCookie } from "@/lib/auth/session";
+import { createSession, withSessionCookie } from "@/lib/auth/session";
+import { sha256 } from "@/lib/hash";
 import { consumeRateLimit } from "@/lib/http/rate-limit";
 import { clientIp } from "@/lib/http/request";
 import { route } from "@/lib/http/route";

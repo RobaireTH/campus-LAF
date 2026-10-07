@@ -10,7 +10,7 @@ import { ApiClient } from "./client";
 export const TEST_PASSWORD = "correct-horse-battery";
 
 interface UserOverrides {
-  name?: string;
+  name?: string | null;
   email?: string;
   phone?: string;
   role?: Role;
@@ -41,7 +41,7 @@ export const toInternational = (localPhone: string) => `+234${localPhone.slice(1
 export async function createUser(overrides: UserOverrides = {}) {
   return db.user.create({
     data: {
-      name: overrides.name ?? "Test User",
+      name: overrides.name === undefined ? "Test User" : overrides.name,
       email: overrides.email ?? uniqueEmail(),
       phone: overrides.phone ?? toInternational(uniqueLocalPhone()),
       password: await testPasswordHash(),
@@ -79,6 +79,25 @@ export async function createItem(
       posterId,
       ...overrides,
     },
+  });
+}
+
+export async function createScope() {
+  const tag = randomUUID().slice(0, 8);
+  const [category, location] = await Promise.all([
+    db.category.create({ data: { name: `Category ${tag}` } }),
+    db.location.create({ data: { name: `Place ${tag}` } }),
+  ]);
+  return { category, location };
+}
+
+export function createClaim(
+  itemId: string,
+  claimantId: string,
+  overrides: Partial<Prisma.ClaimUncheckedCreateInput> = {},
+) {
+  return db.claim.create({
+    data: { itemId, claimantId, proofText: "My initials are stitched inside the lining.", ...overrides },
   });
 }
 

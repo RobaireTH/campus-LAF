@@ -40,7 +40,7 @@ function Badge({ className, variant, uppercase, ...props }: BadgeProps) {
 /* ---- Helpers that map API enums straight to the right badge ---- */
 
 export type ItemType = "LOST" | "FOUND";
-export type ItemStatus = "OPEN" | "CLAIMED" | "RESOLVED";
+export type ItemStatus = "OPEN" | "CLAIMED" | "RESOLVED" | "REMOVED";
 
 /** LOST / FOUND badge. `<ItemTypeBadge type={item.type} />` */
 function ItemTypeBadge({ type, className }: { type: ItemType; className?: string }) {
@@ -51,11 +51,12 @@ function ItemTypeBadge({ type, className }: { type: ItemType; className?: string
   );
 }
 
-const statusLabel: Record<ItemStatus, string> = { OPEN: "Open", CLAIMED: "Claimed", RESOLVED: "Resolved" };
+const statusLabel: Record<ItemStatus, string> = { OPEN: "Open", CLAIMED: "Claimed", RESOLVED: "Resolved", REMOVED: "Removed" };
 
 /** Open / Claimed / Resolved badge. `<ItemStatusBadge status={item.status} />` */
 function ItemStatusBadge({ status, className }: { status: ItemStatus; className?: string }) {
-  const variant = status === "OPEN" ? "open" : status === "CLAIMED" ? "claimed" : "resolved";
+  const variant =
+    status === "OPEN" ? "open" : status === "CLAIMED" ? "claimed" : status === "REMOVED" ? "neutral" : "resolved";
   return (
     <Badge variant={variant} className={className}>
       {statusLabel[status]}

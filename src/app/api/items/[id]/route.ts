@@ -1,46 +1,26 @@
-import { getCurrentUser } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { getCurrentUser, requireUser } from "@/lib/auth";
 import { notFound } from "@/lib/http/errors";
 import { route } from "@/lib/http/route";
+import { parseBody } from "@/lib/http/validate";
+import { updateItemSchema } from "@/lib/items/schema";
+import { getItemDetail, removeItem, updateItem } from "@/lib/items/service";
 
 export const GET = route<RouteContext<"/api/items/[id]">>(async (_request, ctx) => {
   const { id } = await ctx.params;
-  const user = await getCurrentUser();
-
-  const item = await db.item.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      type: true,
-      title: true,
-      description: true,
-      locationNote: true,
-      status: true,
-      eventDate: true,
-      createdAt: true,
-      category: { select: { id: true, name: true } },
-      location: { select: { id: true, name: true } },
-      media: {
-        orderBy: { position: "asc" },
-        select: { key: true, type: true, position: true },
-      },
-      posterId: true,
-      poster: { select: { name: true } },
-    },
-  });
+  const item = await getItemDetail(id, await getCurrentUser());
   if (!item) throw notFound("Item not found");
+  return Response.json({ item });
+});
 
-  const existingClaim = user
-    ? await db.claim.findFirst({ where: { itemId: id, claimantId: user.id }, select: { id: true } })
-    : null;
+export const PATCH = route<RouteContext<"/api/items/[id]">>(async (request, ctx) => {
+  const user = await requireUser();
+  const { id } = await ctx.params;
+  const input = await parseBody(request, updateItemSchema);
+  return Response.json({ item: await updateItem(user, id, input) });
+});
 
-  const { posterId, poster, ...rest } = item;
-  return Response.json({
-    item: {
-      ...rest,
-      posterName: poster.name ?? "Anonymous",
-      isOwner: user?.id === posterId,
-      hasClaimed: Boolean(existingClaim),
-    },
-  });
+export const DELETE = route<RouteContext<"/api/items/[id]">>(async (_request, ctx) => {
+  const user = await requireUser();
+  const { id } = await ctx.params;
+  return Response.json({ item: await removeItem(user, id) });
 });
