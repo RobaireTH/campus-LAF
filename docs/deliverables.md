@@ -95,7 +95,7 @@ Reference docs: the rest of this folder ([README](README.md)) holds the product 
 | `User`: submitted-at and rejection reason for KYC | 2 | Admin queue needs a date; rejected users need to know why |
 | `IdempotencyKey` table | 3 | Safe retries of item and claim creation |
 | `ClaimStatus` gains `CANCELLED` | 3 | Pending claims are closed when a post is removed; handover cancellation reuses it |
-| `Claim` gains a handover code | 4 | The code shown on the handover screen |
+| `Claim` gains a nullable `handoverCode` | 4 | The code shown on the handover screen |
 | New `Report` table | 5 | Users report posts, admins resolve them |
 | New `Notification` table | 6 | In-app notifications |
 | Rate-limit counters, drop unused `VerificationToken` | 7 | Abuse protection and cleanup after removing NextAuth |
@@ -144,14 +144,14 @@ Not in your list, but required by your rules (local server, end-to-end tests for
 
 ## Section 4. Claims and handover
 
-- [ ] 4.1 Claim submission on real auth and the verified rule, idempotent
-- [ ] 4.2 Claim listing: owner sees claims on their item with proof and signed media; claimant sees their own claims
-- [ ] 4.3 Approval and rejection by the item owner only
-- [ ] 4.4 Transactional approval: approve one claim, set the item to CLAIMED, reject every competing pending claim, all or nothing
-- [ ] 4.5 Contact disclosure only to the poster and the approved claimant, only after approval
-- [ ] 4.6 Handover completion (item RESOLVED), cancellation and item reopening (claim CANCELLED, item OPEN again)
-- [ ] 4.7 Authorization matrix tests: owner, claimant, third party, signed out, admin
-- [ ] 4.8 End-to-end tests including two approvals racing each other and repeated requests
+- [x] 4.1 Claim submission on real auth and the verified rule, idempotent with `Idempotency-Key`, 20 per user per day
+- [x] 4.2 Claim listing: owner sees claims on their item with proof and 5-minute signed media; claimant sees their own claims
+- [x] 4.3 Approval and rejection by the item owner only (approval also needs an approved ID)
+- [x] 4.4 Transactional approval: approve one claim, set the item to CLAIMED, reject every competing pending claim, all or nothing
+- [x] 4.5 Contact disclosure (name, phone and WhatsApp link) only to the poster and the approved claimant, only while the handover is active; email is never shared
+- [x] 4.6 Handover completion (item RESOLVED), cancellation and item reopening (claim CANCELLED, item OPEN again), with a shared six-character code
+- [x] 4.7 Authorization matrix tests: owner, claimant, third party, signed out, admin
+- [x] 4.8 End-to-end tests including racing approvals, approve against reject, approve against delete, complete against cancel, repeated requests, and a full report-to-return journey
 
 ## Section 5. Admin moderation and reports
 
@@ -228,10 +228,15 @@ Password reset, email verification, social login, email or push or real-time not
 | D7 | Taxonomy contract | Database ids. The UI reads categories and locations from the database and sends ids; no slugs and no taxonomy endpoint |
 | D8 | Search | Case-insensitive match across title, description, location note, category and location; every word must match somewhere |
 | D9 | Deleting a post with pending claims | Allowed while the item is OPEN; the claims are closed as CANCELLED in the same transaction |
+| D10 | Handover route names | Keep the UI's paths: `GET` and `PATCH /api/claims/:id/handover` |
+| D11 | Handover code | Shared six-character code shown to both people to compare in person; either person can complete or cancel |
+| D12 | Contact shared after approval | Name, phone and a WhatsApp link only; email stays private |
 
 Defaults accepted with the Sections 0 and 1 plan: Node `scrypt` password hashing; cookie `findr_session`, HttpOnly, SameSite=Lax, Secure over HTTPS, 14 days; Origin check on state-changing requests; phone numbers normalised to +234 format; rate-limit counters in the database; API end-to-end tests over real HTTP; server pages read through shared service functions; in-app notifications only.
 
 Defaults accepted with the Section 2 plan: KYC review state lives in two new columns on `User` (a `KycSubmission` history table was the alternative); resubmitting the same ID photo while pending is a safe repeat; a different photo while pending, or an already verified user, gets 409.
+
+Defaults accepted with the Section 4 plan: approving needs an approved ID but rejecting does not; approving rejects every other pending claim; cancelling a handover reopens the item and keeps competing claims rejected so people can claim again; admins get no access to claims or contact; contact and code disappear once a handover is finished or cancelled; claim submission is limited to 20 per user per day.
 
 Defaults accepted with the Section 3 plan: editing changes text, date, category and location but not photos; `Idempotency-Key` is optional; item creation is limited to 20 per user per day; removed items stay visible to their owner and to admins.
 
@@ -243,7 +248,6 @@ The project docs flag these conflicts between the UI and Linear. Each gets alter
 
 | Section | Decision |
 | --- | --- |
-| 4 | Handover routes: UI (`GET` and `PATCH /api/claims/:id/handover`) or Linear (`GET /contact`, `POST /resolve`, `POST /cancel`). What the handover code is for |
 | 5 | Moderation scope: user reports with an admin report queue (current UI), or an admin item list with remove (Linear) |
 | 6 | Notifications are in your list but post-MVP in Linear: confirm they stay in scope |
 | 7 | Hosting target (Vercel or Cloudflare via OpenNext) and a staging environment |
