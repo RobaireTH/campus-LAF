@@ -195,7 +195,7 @@ Deferred until after the MVP, so nothing is built in this section. The bell and 
 - [x] 9.4 Handover on the real API: the other person's name, phone and a WhatsApp link, the shared code with a copy button, completing and cancelling each ask first, and clear screens for not approved yet, returned and cancelled
 - [x] 9.5 Notifications are deferred (D16): the bell and the Notifications page were hidden in 8.5
 - [x] 9.6 Admin on the real API: ID reviews with the photo to open full size and a rejection dialog (quick reasons plus an optional note), reports with a confirmation before a post is removed, and a Posts tab that searches, filters, pages and removes any post; each tab can be linked to (`/admin?tab=posts`)
-- [ ] 9.7 Click through the whole journey in a browser with two accounts (post, claim, review, approve, hand over, complete) and the admin screens
+- [x] 9.7 Clicked through in a browser against the local stack: claim with a photo, review with the proof viewer, reject and approve each asking first, handover with the code, marking returned, the dashboard before and after, and the admin ID rejection, report removal, post search, filter, paging and removal, plus the phone-width layouts. Not clicked: cancelling a handover (the same dialog as completing it, covered by the API tests)
 
 ## Section 10. States, responsive, accessibility
 
