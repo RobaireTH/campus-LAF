@@ -44,7 +44,7 @@ async function ClaimSentContent({ id }: { id: string }) {
           </li>
         ))}
       </ol>
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="grid gap-2 sm:grid-cols-2">
         <Button asChild variant="outline" fullWidth>
           <Link href={itemRoutes.detail(id)}>Back to item</Link>
         </Button>
