@@ -44,7 +44,7 @@ Reference docs: the rest of this folder ([README](README.md)) holds the product 
 | 0 | Foundation | both (required by your rules) | 0 | none |
 | 1 | Auth and sessions | 1 | 4 | SOF-40, 41, 46 |
 | 2 | KYC and protected actions | 1 | 2 | SOF-42, 14, 15 |
-| 3 | Items | 1 | 7 | SOF-9, 10, 11, 12, 13, 15 |
+| 3 | Items | 1 | 6 | SOF-9, 10, 11, 12, 13, 15 |
 | 4 | Claims and handover | 1 | 6 | SOF-16, 17, 18 |
 | 5 | Admin moderation and reports | 1 | 5 | SOF-43 (reports are not in the Linear MVP) |
 | 6 | Notifications | 1 | 2 | none (post-MVP in Linear, in your list) |
@@ -56,7 +56,7 @@ Reference docs: the rest of this folder ([README](README.md)) holds the product 
 
 ## Target API surface
 
-27 endpoints: 20 new, 7 existing that need hardening. Access codes: Public, Session (signed in), Verified (signed in with approved ID), Owner (poster of the item), Party (poster or approved claimant), Admin.
+26 endpoints: 19 new, 7 existing that need hardening. Access codes: Public, Session (signed in), Verified (signed in with approved ID), Owner (poster of the item), Party (poster or approved claimant), Admin.
 
 | Method and path | Access | Section | Today |
 | --- | --- | --- | --- |
@@ -66,7 +66,6 @@ Reference docs: the rest of this folder ([README](README.md)) holds the product 
 | GET /api/me | Session | 1 | New |
 | POST /api/me/verification | Session | 2 | New |
 | POST /api/uploads | Session | 2 | Exists, auth is a stub |
-| GET /api/meta | Public | 3 | New |
 | GET /api/items | Public | 3 | Exists, needs fixes |
 | POST /api/items | Session (Verified or not: decide in section 2) | 3 | Exists, header auth |
 | GET /api/items/:id | Public, viewer-aware | 3 | Exists, needs fixes |
@@ -94,8 +93,9 @@ Reference docs: the rest of this folder ([README](README.md)) holds the product 
 | --- | --- | --- |
 | New `Session` table | 1 | Server-side sessions with logout and revocation (if DB-backed sessions are chosen) |
 | `User`: submitted-at and rejection reason for KYC | 2 | Admin queue needs a date; rejected users need to know why |
-| `IdempotencyKey` table | 3 | Safe retries of item and claim creation (if chosen) |
-| `ClaimStatus` gains `CANCELLED`, `Claim` gains a handover code | 4 | Cancelled handovers and the code shown on the handover screen |
+| `IdempotencyKey` table | 3 | Safe retries of item and claim creation |
+| `ClaimStatus` gains `CANCELLED` | 3 | Pending claims are closed when a post is removed; handover cancellation reuses it |
+| `Claim` gains a handover code | 4 | The code shown on the handover screen |
 | New `Report` table | 5 | Users report posts, admins resolve them |
 | New `Notification` table | 6 | In-app notifications |
 | Rate-limit counters, drop unused `VerificationToken` | 7 | Abuse protection and cleanup after removing NextAuth |
@@ -133,14 +133,14 @@ Not in your list, but required by your rules (local server, end-to-end tests for
 
 ## Section 3. Items
 
-- [ ] 3.1 Categories and locations from the database (`GET /api/meta`)
-- [ ] 3.2 List, search and detail: filters by real ids, `total`, viewer-aware detail (`isOwner`, `myClaim`, `claimCount`), signed media URLs, removed items hidden from everyone but the owner
-- [ ] 3.3 Create: authenticated, media keys checked for ownership and type, idempotent
-- [ ] 3.4 Edit: owner only, while the item is OPEN
-- [ ] 3.5 Delete: owner only, soft delete to REMOVED, pending claims closed
-- [ ] 3.6 Status transitions in one place: OPEN to CLAIMED to RESOLVED, CLAIMED back to OPEN on cancel, any to REMOVED
-- [ ] 3.7 My items
-- [ ] 3.8 End-to-end tests
+- [x] 3.1 Categories and locations from the database: the APIs accept and validate database ids. There is no `/api/meta` endpoint; the server pages read the lists straight from the database in section 8
+- [x] 3.2 List, search and detail: filters by real ids, text search across title, description, location note, category and location, whole-day date range, exact `total`, viewer-aware detail (`isOwner`, `myClaim`, `claimCount`), signed media URLs, removed items hidden from everyone but the owner and admins
+- [x] 3.3 Create: authenticated, media keys checked for ownership and type, at most 5 files, daily limit, idempotent with `Idempotency-Key`
+- [x] 3.4 Edit: owner only, while the item is OPEN, one conditional update
+- [x] 3.5 Delete: owner only, soft delete to REMOVED while OPEN, pending claims closed as CANCELLED in one transaction, safe to repeat
+- [x] 3.6 Status transitions in one table and one guarded update, reused by sections 4 and 5
+- [x] 3.7 My items (removed items left out)
+- [x] 3.8 End-to-end tests
 
 ## Section 4. Claims and handover
 
@@ -172,7 +172,7 @@ Not in your list, but required by your rules (local server, end-to-end tests for
 - [ ] 7.1 Constraints and migrations: clean chain that builds from an empty database, the two partial unique indexes kept, new constraints for the invariants the app relies on, idempotent seed
 - [ ] 7.2 Security pass: security headers, cookie flags, rate limits on login, register, uploads, claims and reports, request size limits, error responses that do not leak internals, log redaction, dependency audit
 - [ ] 7.3 Deployment configuration: build and migrate steps, documented environment variables in `.env.example` (no real values), health check with database check, pooled connection guidance; deploying only on your explicit go-ahead
-- [ ] 7.4 Backend test suite: unit tests for pure rules, end-to-end tests for all 27 endpoints, one command to run everything
+- [ ] 7.4 Backend test suite: unit tests for pure rules, end-to-end tests for all 26 endpoints, one command to run everything
 
 ## Section 8. UI integration: auth, KYC, items
 
@@ -225,10 +225,15 @@ Password reset, email verification, social login, email or push or real-time not
 | D4 | KYC route names | Keep the UI's paths: `POST /api/me/verification`, status from `GET /api/me`, admin on `/api/admin/verifications` |
 | D5 | Which actions need an approved ID | Claim and approve a claim only. Posting needs a login |
 | D6 | Git workflow | One branch per section named `type/short-topic`, committed per section, pushed with a PR after each section |
+| D7 | Taxonomy contract | Database ids. The UI reads categories and locations from the database and sends ids; no slugs and no taxonomy endpoint |
+| D8 | Search | Case-insensitive match across title, description, location note, category and location; every word must match somewhere |
+| D9 | Deleting a post with pending claims | Allowed while the item is OPEN; the claims are closed as CANCELLED in the same transaction |
 
 Defaults accepted with the Sections 0 and 1 plan: Node `scrypt` password hashing; cookie `findr_session`, HttpOnly, SameSite=Lax, Secure over HTTPS, 14 days; Origin check on state-changing requests; phone numbers normalised to +234 format; rate-limit counters in the database; API end-to-end tests over real HTTP; server pages read through shared service functions; in-app notifications only.
 
 Defaults accepted with the Section 2 plan: KYC review state lives in two new columns on `User` (a `KycSubmission` history table was the alternative); resubmitting the same ID photo while pending is a safe repeat; a different photo while pending, or an already verified user, gets 409.
+
+Defaults accepted with the Section 3 plan: editing changes text, date, category and location but not photos; `Idempotency-Key` is optional; item creation is limited to 20 per user per day; removed items stay visible to their owner and to admins.
 
 Calls made while building Sections 0 and 1, open to change: the `pg` driver adapter everywhere; per-IP rate limits kept generous because campus networks share IPs (see `src/lib/auth/limits.ts`); migrations generated by diffing schema files and applied with `migrate deploy`.
 
@@ -238,7 +243,6 @@ The project docs flag these conflicts between the UI and Linear. Each gets alter
 
 | Section | Decision |
 | --- | --- |
-| 3 | Taxonomy contract: ids from a `GET /api/meta` endpoint, or unique slugs added to the database |
 | 4 | Handover routes: UI (`GET` and `PATCH /api/claims/:id/handover`) or Linear (`GET /contact`, `POST /resolve`, `POST /cancel`). What the handover code is for |
 | 5 | Moderation scope: user reports with an admin report queue (current UI), or an admin item list with remove (Linear) |
 | 6 | Notifications are in your list but post-MVP in Linear: confirm they stay in scope |
