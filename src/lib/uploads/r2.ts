@@ -20,7 +20,7 @@ function r2() {
   client ??= new S3Client({
     region: "auto",
     forcePathStyle: true,
-    endpoint: `https://${requireEnv("R2_ACCOUNT_ID")}.r2.cloudflarestorage.com`,
+    endpoint: process.env.R2_ENDPOINT || `https://${requireEnv("R2_ACCOUNT_ID")}.r2.cloudflarestorage.com`,
     credentials: {
       accessKeyId: requireEnv("R2_ACCESS_KEY_ID"),
       secretAccessKey: requireEnv("R2_SECRET_ACCESS_KEY"),

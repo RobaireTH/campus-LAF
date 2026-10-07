@@ -15,8 +15,10 @@ async function main() {
   console.log("Seeding admin user...");
   const admin = await seedAdmin(db, adminPassword, { resetPassword: process.env.RESET_ADMIN_PASSWORD === "1" });
 
-  console.log("Seeding sample items...");
-  await seedSampleItems(db, admin.id, taxonomy);
+  if (process.env.SKIP_SAMPLE_ITEMS !== "1") {
+    console.log("Seeding sample items...");
+    await seedSampleItems(db, admin.id, taxonomy);
+  }
 
   console.log("Seed complete.");
 }

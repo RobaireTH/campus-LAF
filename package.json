@@ -14,7 +14,13 @@
     "tokens:contrast": "node scripts/check-contrast.mjs",
     "test": "vitest run",
     "test:e2e": "vitest run --config vitest.e2e.config.mts",
-    "verify": "npm run lint && npm run typecheck && npm test && npm run test:e2e"
+    "verify": "npm run lint && npm run typecheck && npm test && npm run test:e2e",
+    "demo:seed": "tsx prisma/demo-seed.ts",
+    "local:setup": "node scripts/local.mjs setup",
+    "local:start": "node scripts/local.mjs start",
+    "local:demo": "node scripts/local.mjs demo",
+    "local:stop": "node scripts/local.mjs stop",
+    "local:reset": "node scripts/local.mjs reset"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1146.0",

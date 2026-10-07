@@ -40,5 +40,5 @@ export function e2eDatabaseUrl() {
 
 export function storageEnv() {
   const configured = STORAGE_VARIABLES.every((name) => Boolean(process.env[name])) && !process.env.E2E_SKIP_R2;
-  return configured ? {} : STORAGE_PLACEHOLDERS;
+  return { R2_ENDPOINT: "", ...(configured ? {} : STORAGE_PLACEHOLDERS) };
 }

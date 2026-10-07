@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
 
 const production = process.env.NODE_ENV === "production";
-const storageOrigin = process.env.R2_ACCOUNT_ID ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : "";
+function storageHost() {
+  if (process.env.R2_ENDPOINT) return new URL(process.env.R2_ENDPOINT).origin;
+  return process.env.R2_ACCOUNT_ID ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : "";
+}
+
+const storageOrigin = storageHost();
 
 const contentSecurityPolicy = [
   "default-src 'self'",

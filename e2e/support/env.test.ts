@@ -70,10 +70,10 @@ describe("storageEnv", () => {
     vi.stubEnv("E2E_SKIP_R2", skip);
   };
 
-  it("adds nothing when real storage credentials are present", () => {
+  it("keeps real storage credentials and always clears a local storage endpoint", () => {
     stubStorage();
 
-    expect(storageEnv()).toEqual({});
+    expect(storageEnv()).toEqual({ R2_ENDPOINT: "" });
   });
 
   it.each(STORAGE_VARIABLES)("falls back to offline placeholders when %s is missing", (missing) => {
