@@ -208,11 +208,19 @@ Deferred until after the MVP, so nothing is built in this section. The bell and 
 - [ ] 11.2 Final polish and cleanup: one item card (retire the duplicate), remove dead code, refresh the README and design-system docs
 - [ ] 11.3 Final full run: lint, types, unit tests, API end-to-end tests, browser tests, production build
 
+## Local demo and setup (added at your request)
+
+Not in your original list. Added so the app can be set up and presented on one machine without any cloud account.
+
+- [x] L.1 A fully local stack: a Postgres container, a small local file store for photos, `.env.local` with generated passwords, and `npm run local:setup`, `local:start`, `local:stop`, `local:reset` and `local:demo`. Browser uploads work with no bucket CORS policy (2.6 stays open for the real bucket)
+- [x] L.2 Demo data with real photos: 8 accounts, 23 posts (open, claimed, returned and removed) with 24 CC0 stock photos, 6 claims with proof, 3 reports, two IDs waiting for review and one rejected with a reason. Safe to run again, and it refuses to run against a database that is not on your machine
+- [x] L.3 Tests: the file store, the consistency of the demo data, and the seed run against the real API routes
+
 ## Open items outside the code
 
 | Item | Needed for | Who |
 | --- | --- | --- |
-| Add a CORS policy to the R2 bucket for the app's origins | Any browser upload: items, claims, ID photos | You, in the Cloudflare dashboard |
+| Add a CORS policy to the R2 bucket for the app's origins | Any browser upload to the real bucket: items, claims, ID photos. The local demo does not need it | You, in the Cloudflare dashboard |
 | Update the Linear tickets for the routes decided here | Keeping the tickets true | You |
 | Create the Vercel project, the staging Neon branch and the staging R2 bucket, and set the variables | Any deployment | You, when you give the go-ahead (the checklist is in `testing-and-release.md`) |
 
@@ -248,6 +256,8 @@ Password reset, email verification, social login, in-app notifications until aft
 | D22 | Page guards | The server-side `ProtectedPage` on each protected page (a proxy file and pop-ups only were the alternatives) |
 | D23 | Photo uploads in the browser | Straight to R2, so the bucket needs the CORS policy; you add it, and uploads are checked in the browser once it is in (sending files through the API was the alternative) |
 | D24 | What the edit form changes | Text, date, category and location; photos stay fixed |
+| D25 | Where the demo runs | Fully local: a Postgres container and a local file store, so it is fast, works offline and leaves the shared Neon database alone. Neon and R2 stay as they are |
+| D26 | Where the demo photos come from | CC0 stock photos from StockSnap, found through Openverse, committed with credits; the ID cards and receipts are synthetic. Chosen while building at your request, so open to change |
 
 Defaults accepted with the Sections 0 and 1 plan: Node `scrypt` password hashing; cookie `findr_session`, HttpOnly, SameSite=Lax, Secure over HTTPS, 14 days; Origin check on state-changing requests; phone numbers normalised to +234 format; rate-limit counters in the database; API end-to-end tests over real HTTP; server pages read through shared service functions; in-app notifications only.
 
