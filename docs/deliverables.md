@@ -47,7 +47,7 @@ Reference docs: the rest of this folder ([README](README.md)) holds the product 
 | 3 | Items | 1 | 6 | SOF-9, 10, 11, 12, 13, 15 |
 | 4 | Claims and handover | 1 | 6 | SOF-16, 17, 18 |
 | 5 | Admin moderation and reports | 1 | 7 | SOF-43 (user reports are not in the Linear MVP) |
-| 6 | Notifications | 1 | 2 | none (post-MVP in Linear, in your list) |
+| 6 | Notifications (deferred, D16) | 1 | 0 | none (post-MVP in Linear) |
 | 7 | Database, security, deployment, backend test suite | 1 | 1 | SOF-7, 8, 45, 46 |
 | 8 | UI integration: auth, KYC, items | 2 | 0 | SOF-19, 21 to 25, 37, 38 |
 | 9 | UI integration: dashboard, claims, handover, notifications, admin | 2 | 0 | SOF-26, 28 to 31, 44 |
@@ -56,7 +56,7 @@ Reference docs: the rest of this folder ([README](README.md)) holds the product 
 
 ## Target API surface
 
-28 endpoints: 21 new, 7 existing that need hardening. Access codes: Public, Session (signed in), Verified (signed in with approved ID), Owner (poster of the item), Party (poster or approved claimant), Admin.
+26 endpoints: 19 new, 7 existing that need hardening. Access codes: Public, Session (signed in), Verified (signed in with approved ID), Owner (poster of the item), Party (poster or approved claimant), Admin.
 
 | Method and path | Access | Section | Today |
 | --- | --- | --- | --- |
@@ -85,9 +85,7 @@ Reference docs: the rest of this folder ([README](README.md)) holds the product 
 | PATCH /api/admin/reports/:id | Admin | 5 | New |
 | GET /api/admin/items | Admin | 5 | New |
 | PATCH /api/admin/items/:id/remove | Admin | 5 | New |
-| GET /api/me/notifications | Session | 6 | New |
-| PATCH /api/me/notifications | Session | 6 | New |
-| GET /api/health | Public | 7 | Exists, add database check |
+| GET /api/health | Public | 7 | Exists, now checks the database |
 
 ## Data model changes (final shape agreed per section)
 
@@ -99,7 +97,7 @@ Reference docs: the rest of this folder ([README](README.md)) holds the product 
 | `ClaimStatus` gains `CANCELLED` | 3 | Pending claims are closed when a post is removed; handover cancellation reuses it |
 | `Claim` gains a nullable `handoverCode` | 4 | The code shown on the handover screen |
 | New `Report` table; `User` gains `kycReviewedAt` and `kycReviewedById` | 5 | Users report posts and admins resolve them; the ID review records who decided and when |
-| New `Notification` table | 6 | In-app notifications |
+| New `Notification` table | 6 | Deferred with section 6 (D16) |
 | Rate-limit counters, drop unused `VerificationToken` | 7 | Abuse protection and cleanup after removing NextAuth |
 
 ## Section 0. Foundation
@@ -165,18 +163,20 @@ Not in your list, but required by your rules (local server, end-to-end tests for
 - [x] 5.6 Admin-only enforcement and end-to-end tests, including racing decisions
 - [x] 5.7 Dev admin account reset onto the new password hashing: the new password is in `.env` as `SEED_ADMIN_PASSWORD`, and `RESET_ADMIN_PASSWORD=1 npx prisma db seed` applies it
 
-## Section 6. Notifications
+## Section 6. Notifications (deferred, D16)
 
-- [ ] 6.1 In-app notifications created in the same transaction as the event: claim received, claim approved or rejected, handover completed or cancelled, KYC decision, item removed by an admin
-- [ ] 6.2 List with unread count, mark all or selected as read (repeat-safe)
-- [ ] 6.3 End-to-end tests
+Deferred until after the MVP, so nothing is built in this section. The bell and the Notifications page are hidden in the UI sections (9.5). The plan that was approved, for when it is picked up:
+
+- 6.1 In-app notifications created in the same transaction as the event and only when the state really changed: claim received, claim approved or rejected, handover completed or cancelled, KYC decision, item removed by an admin, plus the claimants whose claim closes because another was approved or the post was removed (D17). The message text is stored when the event happens (D18)
+- 6.2 `GET /api/me/notifications` (newest first, 30 per page, `unreadCount`) and `PATCH /api/me/notifications` with `{ all: true }` or `{ ids }`, safe to repeat; messages never carry contact details or claim proof
+- 6.3 End-to-end tests for every event, repeats and lost races creating nothing, privacy, paging, mark-read, authorization
 
 ## Section 7. Database, security, deployment, backend test suite
 
-- [ ] 7.1 Constraints and migrations: clean chain that builds from an empty database, the two partial unique indexes kept, new constraints for the invariants the app relies on, idempotent seed
-- [ ] 7.2 Security pass: security headers, cookie flags, rate limits on login, register, uploads, claims and reports, request size limits, error responses that do not leak internals, log redaction, dependency audit
-- [ ] 7.3 Deployment configuration: build and migrate steps, documented environment variables in `.env.example` (no real values), health check with database check, pooled connection guidance; deploying only on your explicit go-ahead
-- [ ] 7.4 Backend test suite: unit tests for pure rules, end-to-end tests for all 28 endpoints, one command to run everything
+- [x] 7.1 Constraints and migrations: one migration (`20261007072931_hardening_constraints`) drops the unused `VerificationToken`, adds two CHECK constraints (an approved claim always has a handover code, a decided report always has a decision time) and an index on `RateLimit.resetAt`. The two partial unique indexes stay, the chain builds from an empty database on every end-to-end run, and the seed is tested to be safe to re-run, including the admin reset switch
+- [x] 7.2 Security pass: standard security headers and a fixed content security policy, checked in the browser on every main page; one shared sign-in callback sanitizer, which closes an open redirect that `/\host` got past; a 64 KB cap on JSON bodies (413), also on idempotent requests; error logs with connection strings, cookies and tokens masked; expired sessions, spent rate-limit rows and old idempotency keys pruned at most hourly; the production dependency audit is at 0 (`source-map-js` updated, and the Prisma CLI's `mysql2` and `deepmerge-ts` pinned to patched versions with `overrides`). The 5 advisories left are in ESLint tooling and can only be fixed by downgrading it
+- [x] 7.3 Deployment configuration for Vercel: `/api/health` checks the database (200 or 503, nothing else revealed), `.env.example` documents every variable including the pooled `DATABASE_URL` and the direct `DIRECT_URL` the Prisma CLI reads for migrations, and `testing-and-release.md` has the release, staging and rollback checklist. Nothing is deployed or provisioned until you give the go-ahead
+- [x] 7.4 Backend test suite: `npm run verify` runs everything, a guard test fails when an API route has no end-to-end call, the end-to-end suite needs only a Postgres URL (without R2 credentials it uses offline placeholders) and runs in seconds on a local Postgres, and GitHub Actions runs it on every pull request
 
 ## Section 8. UI integration: auth, KYC, items
 
@@ -192,7 +192,7 @@ Not in your list, but required by your rules (local server, end-to-end tests for
 - [ ] 9.2 Claim submission connected to uploads and the API
 - [ ] 9.3 Claim review (approve, reject) on the real API
 - [ ] 9.4 Handover on the real API: contact details, code, complete, cancel
-- [ ] 9.5 Notifications screen and unread badge in the navigation
+- [ ] 9.5 Notifications are deferred (D16): hide the bell and the Notifications page until the feature is built
 - [ ] 9.6 Admin moderation and verification screens on the real API
 
 ## Section 10. States, responsive, accessibility
@@ -213,10 +213,11 @@ Not in your list, but required by your rules (local server, end-to-end tests for
 | --- | --- | --- |
 | Add a CORS policy to the R2 bucket for the app's origins | Any browser upload: items, claims, ID photos | You, in the Cloudflare dashboard |
 | Update the Linear tickets for the routes decided here | Keeping the tickets true | You |
+| Create the Vercel project, the staging Neon branch and the staging R2 bucket, and set the variables | Any deployment | You, when you give the go-ahead (the checklist is in `testing-and-release.md`) |
 
 ## Out of scope (not in your list)
 
-Password reset, email verification, social login, email or push or real-time notifications, search ranking, image moderation, admin user management beyond KYC and reports, translations, dark mode.
+Password reset, email verification, social login, in-app notifications until after the MVP (D16), email or push or real-time notifications, search ranking, image moderation, admin user management beyond KYC and reports, translations, dark mode.
 
 ## Decision log
 
@@ -237,6 +238,12 @@ Password reset, email verification, social login, email or push or real-time not
 | D13 | Moderation scope | Both: users report posts and admins work a report queue, and admins can list and remove any post |
 | D14 | Rejecting an ID | The admin may add a note; without one the user sees a default message asking for a clearer photo |
 | D15 | Seeded admin account | Reset in place: a new random password in `.env` (`SEED_ADMIN_PASSWORD`), applied with `RESET_ADMIN_PASSWORD=1` on the seed |
+| D16 | Notifications | Deferred until after the MVP, as Linear has it. Section 6 builds nothing, and the UI sections hide the bell and the Notifications page |
+| D17 | Who is told, when notifications are built | Your list plus the people it affects: claimants whose claim closes because another was approved or the post was removed |
+| D18 | Message text, when notifications are built | Stored when the event happens, not rebuilt on read |
+| D19 | Hosting target | Vercel with Neon and R2. Configuration and checklist only: nothing is deployed until you say go |
+| D20 | Automated checks | GitHub Actions on every pull request: lint, types, unit tests and the full end-to-end suite against a throwaway Postgres container |
+| D21 | Browser security headers | Standard headers plus a fixed CSP that allows this site and the R2 host. Scripts and styles keep `'unsafe-inline'`; a nonce-based CSP stays an option for later |
 
 Defaults accepted with the Sections 0 and 1 plan: Node `scrypt` password hashing; cookie `findr_session`, HttpOnly, SameSite=Lax, Secure over HTTPS, 14 days; Origin check on state-changing requests; phone numbers normalised to +234 format; rate-limit counters in the database; API end-to-end tests over real HTTP; server pages read through shared service functions; in-app notifications only.
 
@@ -248,13 +255,6 @@ Defaults accepted with the Section 3 plan: editing changes text, date, category 
 
 Defaults accepted with the Section 5 plan: the report reasons are a fixed list (spam, fake or misleading, private details, offensive, other) with optional details of up to 500 characters; one report per person per post, and a second report from the same person returns the first; you cannot report your own post and removed posts cannot be reported; 20 reports per user per day; reporters stay anonymous to posters; admin queues show the 100 oldest entries; an admin cannot review their own ID; removing a post closes its pending and approved claims and marks every open report on it as actioned, so a removed post never has a live claim; admins still get no access to claims or contact.
 
+Defaults accepted with the Section 7 plan: housekeeping prunes expired sessions, spent rate-limit rows and idempotency keys older than a day at most once an hour per server instance, after a login or registration request (the alternatives were a scheduled job or nothing); no rate limit on public search until the Browse page reads through services in section 8, because its server-side fetches would share one address; `DIRECT_URL` is read first by the Prisma CLI and falls back to `DATABASE_URL`; the end-to-end suite uses placeholder storage credentials unless real ones are present, and `E2E_SKIP_R2=1` forces them; the production dependency audit must stay at 0.
+
 Calls made while building Sections 0 and 1, open to change: the `pg` driver adapter everywhere; per-IP rate limits kept generous because campus networks share IPs (see `src/lib/auth/limits.ts`); migrations generated by diffing schema files and applied with `migrate deploy`.
-
-## To settle in their section
-
-The project docs flag these conflicts between the UI and Linear. Each gets alternatives and trade-offs in its section plan.
-
-| Section | Decision |
-| --- | --- |
-| 6 | Notifications are in your list but post-MVP in Linear: confirm they stay in scope |
-| 7 | Hosting target (Vercel or Cloudflare via OpenNext) and a staging environment |
