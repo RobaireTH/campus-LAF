@@ -124,11 +124,12 @@ Not in your list, but required by your rules (local server, end-to-end tests for
 
 ## Section 2. KYC and protected actions
 
-- [ ] 2.1 KYC submission: a signed-in user submits their uploaded ID image, status becomes PENDING, resubmission after rejection is allowed, and the image must be that user's own `kyc/` upload
-- [ ] 2.2 Verification status (NOT_SUBMITTED, PENDING, VERIFIED, REJECTED with reason) returned by `GET /api/me`
-- [ ] 2.3 Protected-action guards for signed in, verified and admin, in one place and reused by every route
-- [ ] 2.4 `/api/uploads` on real authentication with per-purpose rules; ID images stay private
-- [ ] 2.5 End-to-end tests
+- [x] 2.1 KYC submission: a signed-in user submits their uploaded ID image, status becomes PENDING, resubmission after rejection is allowed, and the image must be that user's own `kyc/` upload
+- [x] 2.2 Verification status (NOT_SUBMITTED, PENDING, VERIFIED, REJECTED with reason) returned by `GET /api/me`
+- [x] 2.3 Protected-action guards for signed in, verified and admin, in one place and reused by every route (the verified guard is now on claim submission; claim approval gets it in section 4)
+- [x] 2.4 `/api/uploads` on real authentication with per-purpose rules and a per-user rate limit; ID images stay private because attached keys are checked for owner and purpose
+- [x] 2.5 End-to-end tests, including a real round trip to the R2 bucket
+- [ ] 2.6 Browser uploads to R2 work from the app's origin. Blocked on the bucket's CORS policy, which only the Cloudflare dashboard can change (see `local-development.md`)
 
 ## Section 3. Items
 
@@ -201,6 +202,14 @@ Not in your list, but required by your rules (local server, end-to-end tests for
 - [ ] 11.1 Browser tests for the main workflows: register, verify, report, claim, approve, hand over; reject path; cancel and reopen; admin KYC and report moderation; unauthorized access
 - [ ] 11.2 Final polish and cleanup: one item card (retire the duplicate), remove dead code, refresh the README and design-system docs
 - [ ] 11.3 Final full run: lint, types, unit tests, API end-to-end tests, browser tests, production build
+
+## Open items outside the code
+
+| Item | Needed for | Who |
+| --- | --- | --- |
+| Add a CORS policy to the R2 bucket for the app's origins | Any browser upload: items, claims, ID photos | You, in the Cloudflare dashboard |
+| Reset the seeded admin's password | The admin screens (section 5) | Me, when we reach section 5 |
+| Update the Linear tickets for the routes decided here | Keeping the tickets true | You |
 
 ## Out of scope (not in your list)
 
