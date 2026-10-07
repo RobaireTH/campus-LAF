@@ -8,8 +8,12 @@ import type { UploadRequest, UploadResponse } from "./schema";
 
 const UPLOAD_URL_TTL_SECONDS = 300;
 
+function readEnv(name: string) {
+  return process.env[name]?.trim() ?? "";
+}
+
 function requireEnv(name: string) {
-  const value = process.env[name];
+  const value = readEnv(name);
   if (!value) throw new Error(`${name} is not set`);
   return value;
 }
@@ -20,7 +24,7 @@ function r2() {
   client ??= new S3Client({
     region: "auto",
     forcePathStyle: true,
-    endpoint: process.env.R2_ENDPOINT || `https://${requireEnv("R2_ACCOUNT_ID")}.r2.cloudflarestorage.com`,
+    endpoint: readEnv("R2_ENDPOINT") || `https://${requireEnv("R2_ACCOUNT_ID")}.r2.cloudflarestorage.com`,
     credentials: {
       accessKeyId: requireEnv("R2_ACCESS_KEY_ID"),
       secretAccessKey: requireEnv("R2_SECRET_ACCESS_KEY"),
